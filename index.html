@@ -14,7 +14,7 @@ header{display:flex;justify-content:space-between;align-items:center;margin-bott
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:10px}.top{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:7px}.stat{background:#0f1218;border:1px solid var(--line);border-radius:12px;padding:7px;text-align:center}.stat small{display:block;color:var(--muted);font-size:10px}.stat b{font-size:18px}
 .game-wrap{position:relative}canvas{display:block;width:100%;height:min(58vh,560px);background:#080a0f;border:1px solid var(--line);border-radius:13px;touch-action:none}
 .status{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:#000c;border:1px solid var(--line);border-radius:14px;padding:14px 18px;text-align:center;font-weight:900;display:none}.status.show{display:block}.help{color:var(--muted);font-size:11px;text-align:center;margin:8px 0 0}
-.controls{position:fixed;left:8px;right:8px;bottom:calc(8px + env(safe-area-inset-bottom));z-index:20;display:grid;grid-template-columns:repeat(4,1fr);gap:7px;background:rgba(11,13,18,.96);padding:8px;border:1px solid var(--line);border-radius:16px}.controls button{border:0;border-radius:12px;background:#252a35;color:#fff;font-weight:900;padding:13px 6px;font-size:21px;touch-action:manipulation}.controls button:active{transform:scale(.95);background:#384152}
+.controls{position:fixed;left:8px;right:8px;bottom:calc(8px + env(safe-area-inset-bottom));z-index:20;display:grid;grid-template-columns:repeat(4,1fr);gap:7px;background:rgba(11,13,18,.96);padding:8px;border:1px solid var(--line);border-radius:16px}.controls button{border:0;border-radius:12px;background:#252a35;color:#fff;font-weight:900;padding:13px 6px;font-size:21px;touch-action:manipulation;user-select:none;-webkit-user-select:none}.controls button:active{transform:scale(.95);background:#384152}.controls .rotate{font-size:15px}
 </style>
 </head>
 <body>
@@ -23,10 +23,10 @@ header{display:flex;justify-content:space-between;align-items:center;margin-bott
 <section class="panel">
 <div class="top"><div class="stat"><small>SCORE</small><b id="score">0</b></div><div class="stat"><small>LEVEL</small><b id="level">1</b></div><div class="stat"><small>LINES</small><b id="lines">0</b></div></div>
 <div class="game-wrap"><canvas id="game" width="300" height="480" aria-label="SHIFT TETRISゲーム画面"></canvas><div id="status" class="status">画面をタップして開始</div></div>
-<p class="help">自動で始まります。反応しない場合はゲーム画面を1回タップしてください。</p>
+<p class="help">中央の「回転」ボタンで向きを変えられます。</p>
 </section>
 </main>
-<div class="controls"><button id="left">◀</button><button id="rotate">⟳</button><button id="right">▶</button><button id="down">▼</button></div>
+<div class="controls"><button id="left" aria-label="左へ移動">◀</button><button id="rotate" class="rotate" aria-label="回転">↻ 回転</button><button id="right" aria-label="右へ移動">▶</button><button id="down" aria-label="下へ移動">▼</button></div>
 <script>
 (()=>{
 const canvas=document.getElementById('game');
@@ -47,15 +47,16 @@ function clearLines(){let n=0;for(let y=H-1;y>=0;y--){if(board[y].every(Boolean)
 function update(){scoreEl.textContent=score;levelEl.textContent=level;linesEl.textContent=lines}
 function drop(){if(!running)return;if(!collide(piece.x,piece.y+1,piece.m)){piece.y++}else{merge();clearLines();spawn()}}
 function move(dx){ensureRunning();if(!collide(piece.x+dx,piece.y,piece.m))piece.x+=dx}
-function rotate(){ensureRunning();const m=piece.m[0].map((_,i)=>piece.m.map(r=>r[i]).reverse());if(!collide(piece.x,piece.y,m))piece.m=m}
+function rotate(){ensureRunning();const rotated=piece.m[0].map((_,i)=>piece.m.map(r=>r[i]).reverse());const kicks=[0,-1,1,-2,2];for(const dx of kicks){if(!collide(piece.x+dx,piece.y,rotated)){piece.x+=dx;piece.m=rotated;return}}}
 function ensureRunning(){if(!running)start()}
 function start(){running=true;status.classList.remove('show');lastDrop=performance.now();startTime=lastDrop}
 function drawCell(x,y,id){ctx.fillStyle=colors[id];ctx.fillRect(x*S+1,y*S+1,S-2,S-2);ctx.strokeStyle='rgba(255,255,255,.22)';ctx.strokeRect(x*S+2,y*S+2,S-4,S-4)}
 function render(){ctx.fillStyle='#080a0f';ctx.fillRect(0,0,canvas.width,canvas.height);for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(board[y][x])drawCell(x,y,board[y][x]);if(piece)piece.m.forEach((r,y)=>r.forEach((v,x)=>{if(v)drawCell(piece.x+x,piece.y+y,piece.id)}))}
 function loop(now){if(running){const elapsed=Math.floor((now-startTime)/10000);const speed=Math.max(110,700-elapsed*55);if(now-lastDrop>=speed){drop();lastDrop=now}}render();requestAnimationFrame(loop)}
-function bind(id,fn){document.getElementById(id).addEventListener('pointerdown',e=>{e.preventDefault();fn()})}
+function bind(id,fn){const el=document.getElementById(id);let last=0;const fire=e=>{e.preventDefault();const now=Date.now();if(now-last<180)return;last=now;fn()};el.addEventListener('touchend',fire,{passive:false});el.addEventListener('click',fire)}
 bind('left',()=>move(-1));bind('right',()=>move(1));bind('rotate',rotate);bind('down',()=>{ensureRunning();drop()});
-canvas.addEventListener('pointerdown',e=>{e.preventDefault();ensureRunning()});
+canvas.addEventListener('touchend',e=>{e.preventDefault();ensureRunning()},{passive:false});
+canvas.addEventListener('click',ensureRunning);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&running)lastDrop=performance.now()});
 reset();status.classList.add('show');requestAnimationFrame(loop);setTimeout(start,350);
 })();
