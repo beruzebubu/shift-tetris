@@ -1,1 +1,64 @@
-<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"><title>SHIFT TETRIS</title><style>:root{color-scheme:dark;--bg:#0b0d12;--panel:#171a22;--line:#303541;--text:#fff;--muted:#aeb5c2;--accent:#65e0b0}*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;overscroll-behavior:none}body{padding:max(14px,env(safe-area-inset-top)) 12px calc(110px + env(safe-area-inset-bottom));display:flex;justify-content:center}.app{width:min(520px,100%)}header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.logo{font-weight:950;font-size:22px;letter-spacing:.03em}.badge{font-size:11px;color:var(--accent);border:1px solid #315f50;border-radius:999px;padding:6px 9px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:12px}.top{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:9px}.stat{background:#0f1218;border:1px solid var(--line);border-radius:13px;padding:8px;text-align:center}.stat small{display:block;color:var(--muted);font-size:10px}.stat b{font-size:18px}canvas{display:block;width:100%;max-height:62vh;height:auto;aspect-ratio:10/16;background:#080a0f;border:1px solid var(--line);border-radius:14px;touch-action:none}.controls{position:fixed;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));z-index:20;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;background:rgba(11,13,18,.94);padding:10px;border:1px solid var(--line);border-radius:18px;backdrop-filter:blur(12px)}.controls button{border:0;border-radius:13px;background:#252a35;color:#fff;font-weight:900;padding:16px 8px;font-size:22px;touch-action:manipulation}.controls button:active{transform:scale(.96);background:#333a49}.help{color:var(--muted);font-size:12px;text-align:center;margin:10px 0 0}.error{display:none;background:#3a1717;color:#ffd9d9;border:1px solid #704040;border-radius:12px;padding:12px;margin-top:12px;font-size:13px}</style></head><body><main class="app"><header><div class="logo">SHIFT TETRIS</div><div class="badge">10秒ごとに加速</div></header><section class="panel"><div class="top"><div class="stat"><small>SCORE</small><b id="score">0</b></div><div class="stat"><small>LEVEL</small><b id="level">1</b></div><div class="stat"><small>LINES</small><b id="lines">0</b></div></div><canvas id="game" width="300" height="480" aria-label="SHIFT TETRISゲーム画面"></canvas><p class="help">開いたら自動でスタートします。下のボタンで操作してください。</p><div id="error" class="error">ゲームの読み込みに失敗しました。ページを再読み込みしてください。</div></section></main><div class="controls"><button id="left" aria-label="左">◀</button><button id="rotate" aria-label="回転">⟳</button><button id="right" aria-label="右">▶</button><button id="down" aria-label="落下">▼</button></div><script>(()=>{try{const c=document.getElementById('game'),x=c.getContext('2d');if(!x)throw new Error('canvas');const W=10,H=16,S=30,colors=['#0000','#65e0b0','#ffcc66','#78a8ff','#ef7dff','#ff7979','#6fe57a','#ff9a62'];let board,piece,score=0,lines=0,level=1,timer=null,started=false,lastSpeed=700;const shapes=[[[1,1,1,1]],[[1,1],[1,1]],[[0,1,0],[1,1,1]],[[1,0,0],[1,1,1]],[[0,0,1],[1,1,1]],[[0,1,1],[1,1,0]],[[1,1,0],[0,1,1]]],scoreEl=document.getElementById('score'),linesEl=document.getElementById('lines'),levelEl=document.getElementById('level');function resetBoard(){board=Array.from({length:H},()=>Array(W).fill(0))}function collide(px,py,m){for(let y=0;y<m.length;y++)for(let xx=0;xx<m[y].length;xx++)if(m[y][xx]){const bx=px+xx,by=py+y;if(bx<0||bx>=W||by>=H||(by>=0&&board[by][bx]))return true}return false}function spawn(){const id=1+Math.floor(Math.random()*7),m=shapes[id-1].map(r=>r.slice());piece={m,id,x:Math.floor((W-m[0].length)/2),y:0};if(collide(piece.x,piece.y,piece.m))start()}function merge(){piece.m.forEach((r,y)=>r.forEach((v,xx)=>{if(v&&piece.y+y>=0)board[piece.y+y][piece.x+xx]=piece.id}))}function clearLines(){let n=0;for(let y=H-1;y>=0;y--)if(board[y].every(Boolean)){board.splice(y,1);board.unshift(Array(W).fill(0));n++;y++}if(n){lines+=n;score+=[0,100,300,500,800][n]*level;level=1+Math.floor(lines/8);updateStats();setSpeed()}}function updateStats(){scoreEl.textContent=score;linesEl.textContent=lines;levelEl.textContent=level}function cell(px,py,id){x.fillStyle=colors[id];x.fillRect(px*S+1,py*S+1,S-2,S-2);x.strokeStyle='rgba(255,255,255,.22)';x.strokeRect(px*S+2,py*S+2,S-4,S-4)}function draw(){x.fillStyle='#080a0f';x.fillRect(0,0,c.width,c.height);for(let y=0;y<H;y++)for(let xx=0;xx<W;xx++)if(board[y][xx])cell(xx,y,board[y][xx]);if(piece)piece.m.forEach((r,y)=>r.forEach((v,xx)=>{if(v)cell(piece.x+xx,piece.y+y,piece.id)}));requestAnimationFrame(draw)}function drop(){if(!started)return;if(!collide(piece.x,piece.y+1,piece.m))piece.y++;else{merge();clearLines();spawn()}}function move(d){if(started&&!collide(piece.x+d,piece.y,piece.m))piece.x+=d}function rotate(){if(!started)return;const m=piece.m[0].map((_,i)=>piece.m.map(r=>r[i]).reverse());if(!collide(piece.x,piece.y,m))piece.m=m}function setSpeed(){const speed=Math.max(120,700-(level-1)*70);if(speed!==lastSpeed&&started){lastSpeed=speed;clearInterval(timer);timer=setInterval(drop,speed)}}function start(){resetBoard();score=0;lines=0;level=1;started=true;updateStats();spawn();clearInterval(timer);lastSpeed=700;timer=setInterval(drop,lastSpeed)}function bind(id,fn){const el=document.getElementById(id);el.addEventListener('pointerdown',e=>{e.preventDefault();fn()},{passive:false});el.addEventListener('touchstart',e=>{e.preventDefault();fn()},{passive:false})}bind('left',()=>move(-1));bind('right',()=>move(1));bind('rotate',rotate);bind('down',drop);document.addEventListener('keydown',e=>{if(e.key==='ArrowLeft')move(-1);if(e.key==='ArrowRight')move(1);if(e.key==='ArrowUp')rotate();if(e.key==='ArrowDown')drop()});resetBoard();draw();start()}catch(e){document.getElementById('error').style.display='block';console.error(e)}})();</script></body></html>
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>SHIFT TETRIS</title>
+<style>
+:root{color-scheme:dark;--bg:#0b0d12;--panel:#171a22;--line:#303541;--text:#fff;--muted:#aeb5c2;--accent:#65e0b0}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;overscroll-behavior:none}
+body{padding:max(10px,env(safe-area-inset-top)) 10px calc(94px + env(safe-area-inset-bottom));display:flex;justify-content:center}
+.app{width:min(430px,100%)}
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.logo{font-weight:950;font-size:21px}.badge{font-size:11px;color:var(--accent);border:1px solid #315f50;border-radius:999px;padding:5px 8px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:10px}.top{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:7px}.stat{background:#0f1218;border:1px solid var(--line);border-radius:12px;padding:7px;text-align:center}.stat small{display:block;color:var(--muted);font-size:10px}.stat b{font-size:18px}
+.game-wrap{position:relative}canvas{display:block;width:100%;height:min(58vh,560px);background:#080a0f;border:1px solid var(--line);border-radius:13px;touch-action:none}
+.status{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:#000c;border:1px solid var(--line);border-radius:14px;padding:14px 18px;text-align:center;font-weight:900;display:none}.status.show{display:block}.help{color:var(--muted);font-size:11px;text-align:center;margin:8px 0 0}
+.controls{position:fixed;left:8px;right:8px;bottom:calc(8px + env(safe-area-inset-bottom));z-index:20;display:grid;grid-template-columns:repeat(4,1fr);gap:7px;background:rgba(11,13,18,.96);padding:8px;border:1px solid var(--line);border-radius:16px}.controls button{border:0;border-radius:12px;background:#252a35;color:#fff;font-weight:900;padding:13px 6px;font-size:21px;touch-action:manipulation}.controls button:active{transform:scale(.95);background:#384152}
+</style>
+</head>
+<body>
+<main class="app">
+<header><div class="logo">SHIFT TETRIS</div><div class="badge">10秒ごとに加速</div></header>
+<section class="panel">
+<div class="top"><div class="stat"><small>SCORE</small><b id="score">0</b></div><div class="stat"><small>LEVEL</small><b id="level">1</b></div><div class="stat"><small>LINES</small><b id="lines">0</b></div></div>
+<div class="game-wrap"><canvas id="game" width="300" height="480" aria-label="SHIFT TETRISゲーム画面"></canvas><div id="status" class="status">画面をタップして開始</div></div>
+<p class="help">自動で始まります。反応しない場合はゲーム画面を1回タップしてください。</p>
+</section>
+</main>
+<div class="controls"><button id="left">◀</button><button id="rotate">⟳</button><button id="right">▶</button><button id="down">▼</button></div>
+<script>
+(()=>{
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+const status=document.getElementById('status');
+const scoreEl=document.getElementById('score');
+const levelEl=document.getElementById('level');
+const linesEl=document.getElementById('lines');
+const W=10,H=16,S=30;
+const colors=['transparent','#65e0b0','#ffcc66','#78a8ff','#ef7dff','#ff7979','#6fe57a','#ff9a62'];
+const shapes=[[[1,1,1,1]],[[1,1],[1,1]],[[0,1,0],[1,1,1]],[[1,0,0],[1,1,1]],[[0,0,1],[1,1,1]],[[0,1,1],[1,1,0]],[[1,1,0],[0,1,1]]];
+let board,piece,score=0,lines=0,level=1,running=false,lastDrop=0,startTime=0;
+function reset(){board=Array.from({length:H},()=>Array(W).fill(0));score=0;lines=0;level=1;update();spawn()}
+function spawn(){const id=1+Math.floor(Math.random()*7);const m=shapes[id-1].map(r=>r.slice());piece={id,m,x:Math.floor((W-m[0].length)/2),y:0};if(collide(piece.x,piece.y,piece.m)){reset()}}
+function collide(px,py,m){for(let y=0;y<m.length;y++)for(let x=0;x<m[y].length;x++)if(m[y][x]){const bx=px+x,by=py+y;if(bx<0||bx>=W||by>=H||(by>=0&&board[by][bx]))return true}return false}
+function merge(){piece.m.forEach((r,y)=>r.forEach((v,x)=>{if(v&&piece.y+y>=0)board[piece.y+y][piece.x+x]=piece.id}))}
+function clearLines(){let n=0;for(let y=H-1;y>=0;y--){if(board[y].every(Boolean)){board.splice(y,1);board.unshift(Array(W).fill(0));n++;y++}}if(n){lines+=n;score+=[0,100,300,500,800][n]*level;level=1+Math.floor(lines/8);update()}}
+function update(){scoreEl.textContent=score;levelEl.textContent=level;linesEl.textContent=lines}
+function drop(){if(!running)return;if(!collide(piece.x,piece.y+1,piece.m)){piece.y++}else{merge();clearLines();spawn()}}
+function move(dx){ensureRunning();if(!collide(piece.x+dx,piece.y,piece.m))piece.x+=dx}
+function rotate(){ensureRunning();const m=piece.m[0].map((_,i)=>piece.m.map(r=>r[i]).reverse());if(!collide(piece.x,piece.y,m))piece.m=m}
+function ensureRunning(){if(!running)start()}
+function start(){running=true;status.classList.remove('show');lastDrop=performance.now();startTime=lastDrop}
+function drawCell(x,y,id){ctx.fillStyle=colors[id];ctx.fillRect(x*S+1,y*S+1,S-2,S-2);ctx.strokeStyle='rgba(255,255,255,.22)';ctx.strokeRect(x*S+2,y*S+2,S-4,S-4)}
+function render(){ctx.fillStyle='#080a0f';ctx.fillRect(0,0,canvas.width,canvas.height);for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(board[y][x])drawCell(x,y,board[y][x]);if(piece)piece.m.forEach((r,y)=>r.forEach((v,x)=>{if(v)drawCell(piece.x+x,piece.y+y,piece.id)}))}
+function loop(now){if(running){const elapsed=Math.floor((now-startTime)/10000);const speed=Math.max(110,700-elapsed*55);if(now-lastDrop>=speed){drop();lastDrop=now}}render();requestAnimationFrame(loop)}
+function bind(id,fn){document.getElementById(id).addEventListener('pointerdown',e=>{e.preventDefault();fn()})}
+bind('left',()=>move(-1));bind('right',()=>move(1));bind('rotate',rotate);bind('down',()=>{ensureRunning();drop()});
+canvas.addEventListener('pointerdown',e=>{e.preventDefault();ensureRunning()});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&running)lastDrop=performance.now()});
+reset();status.classList.add('show');requestAnimationFrame(loop);setTimeout(start,350);
+})();
+</script>
+</body>
+</html>
