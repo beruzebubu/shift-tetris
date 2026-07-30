@@ -23,7 +23,7 @@ header{display:flex;justify-content:space-between;align-items:center;margin-bott
 <section class="panel">
 <div class="top"><div class="stat"><small>SCORE</small><b id="score">0</b></div><div class="stat"><small>LEVEL</small><b id="level">1</b></div><div class="stat"><small>LINES</small><b id="lines">0</b></div></div>
 <div class="game-wrap"><canvas id="game" width="300" height="480" aria-label="SHIFT TETRISゲーム画面"></canvas><div id="status" class="status"><div id="statusContent">画面をタップして開始</div></div></div>
-<p class="help">ゲームオーバー後は最終スコアを表示し、「もう一度遊ぶ」を押すまで停止します。</p>
+<p class="help">最初の1ゲームは無料。ゲームオーバー後の再プレイ時だけ広告を表示します。</p>
 </section>
 </main>
 <div class="controls"><button id="left" aria-label="左へ移動">◀</button><button id="rotate" class="rotate" aria-label="回転">↻ 回転</button><button id="right" aria-label="右へ移動">▶</button><button id="down" aria-label="下へ移動">▼</button></div>
@@ -37,12 +37,14 @@ const scoreEl=document.getElementById('score');
 const levelEl=document.getElementById('level');
 const linesEl=document.getElementById('lines');
 const W=10,H=16,S=30;
+const embedded=window.self!==window.top;
 const colors=['transparent','#65e0b0','#ffcc66','#78a8ff','#ef7dff','#ff7979','#6fe57a','#ff9a62'];
 const shapes=[[[1,1,1,1]],[[1,1],[1,1]],[[0,1,0],[1,1,1]],[[1,0,0],[1,1,1]],[[0,0,1],[1,1,1]],[[0,1,1],[1,1,0]],[[1,1,0],[0,1,1]]];
 let board,piece,score=0,lines=0,level=1,running=false,gameOver=false,lastDrop=0,startTime=0;
 function reset(){board=Array.from({length:H},()=>Array(W).fill(0));piece=null;score=0;lines=0;level=1;gameOver=false;update();spawn()}
 function spawn(){const id=1+Math.floor(Math.random()*7);const m=shapes[id-1].map(r=>r.slice());const next={id,m,x:Math.floor((W-m[0].length)/2),y:0};if(collide(next.x,next.y,next.m)){finishGame();return}piece=next}
-function finishGame(){running=false;gameOver=true;piece=null;statusContent.innerHTML=`<div class="status-title">GAME OVER</div><span class="final-label">FINAL SCORE</span><strong class="final-score">${score}</strong><button id="restartButton" class="restart" type="button">もう一度遊ぶ</button>`;status.classList.add('show');document.getElementById('restartButton').addEventListener('click',startNewGame)}
+function finishGame(){running=false;gameOver=true;piece=null;const label=embedded?'広告を見てもう一度遊ぶ':'もう一度遊ぶ';statusContent.innerHTML=`<div class="status-title">GAME OVER</div><span class="final-label">FINAL SCORE</span><strong class="final-score">${score}</strong><button id="restartButton" class="restart" type="button">${label}</button>`;status.classList.add('show');document.getElementById('restartButton').addEventListener('click',requestRestart)}
+function requestRestart(){if(embedded){window.parent.postMessage({type:'shift-tetris-retry'},'https://beruzebubu.github.io');return}startNewGame()}
 function startNewGame(){reset();running=true;status.classList.remove('show');lastDrop=performance.now();startTime=lastDrop}
 function collide(px,py,m){for(let y=0;y<m.length;y++)for(let x=0;x<m[y].length;x++)if(m[y][x]){const bx=px+x,by=py+y;if(bx<0||bx>=W||by>=H||(by>=0&&board[by][bx]))return true}return false}
 function merge(){piece.m.forEach((r,y)=>r.forEach((v,x)=>{if(v&&piece.y+y>=0)board[piece.y+y][piece.x+x]=piece.id}))}
