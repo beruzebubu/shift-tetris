@@ -13,7 +13,7 @@ body{padding:max(10px,env(safe-area-inset-top)) 10px calc(94px + env(safe-area-i
 header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.logo{font-weight:950;font-size:21px}.badge{font-size:11px;color:var(--accent);border:1px solid #315f50;border-radius:999px;padding:5px 8px}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:10px}.top{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:7px}.stat{background:#0f1218;border:1px solid var(--line);border-radius:12px;padding:7px;text-align:center}.stat small{display:block;color:var(--muted);font-size:10px}.stat b{font-size:18px}
 .game-wrap{position:relative}canvas{display:block;width:100%;height:min(58vh,560px);background:#080a0f;border:1px solid var(--line);border-radius:13px;touch-action:none}
-.status{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:#000c;border:1px solid var(--line);border-radius:14px;padding:14px 18px;text-align:center;font-weight:900;display:none}.status.show{display:block}.help{color:var(--muted);font-size:11px;text-align:center;margin:8px 0 0}
+.status{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(270px,86%);background:rgba(0,0,0,.92);border:1px solid var(--line);border-radius:16px;padding:18px;text-align:center;font-weight:900;display:none;z-index:5}.status.show{display:block}.status-title{font-size:24px;margin:0 0 8px}.final-label{display:block;color:var(--muted);font-size:12px;margin-top:10px}.final-score{display:block;color:var(--accent);font-size:42px;line-height:1.1;margin:3px 0 14px}.restart{width:100%;border:0;border-radius:12px;background:var(--accent);color:#07130f;font-weight:950;font-size:16px;padding:13px;cursor:pointer}.help{color:var(--muted);font-size:11px;text-align:center;margin:8px 0 0}
 .controls{position:fixed;left:8px;right:8px;bottom:calc(8px + env(safe-area-inset-bottom));z-index:20;display:grid;grid-template-columns:repeat(4,1fr);gap:7px;background:rgba(11,13,18,.96);padding:8px;border:1px solid var(--line);border-radius:16px}.controls button{border:0;border-radius:12px;background:#252a35;color:#fff;font-weight:900;padding:13px 6px;font-size:21px;touch-action:manipulation;user-select:none;-webkit-user-select:none}.controls button:active{transform:scale(.95);background:#384152}.controls .rotate{font-size:15px}
 </style>
 </head>
@@ -22,8 +22,8 @@ header{display:flex;justify-content:space-between;align-items:center;margin-bott
 <header><div class="logo">SHIFT TETRIS</div><div class="badge">10秒ごとに加速</div></header>
 <section class="panel">
 <div class="top"><div class="stat"><small>SCORE</small><b id="score">0</b></div><div class="stat"><small>LEVEL</small><b id="level">1</b></div><div class="stat"><small>LINES</small><b id="lines">0</b></div></div>
-<div class="game-wrap"><canvas id="game" width="300" height="480" aria-label="SHIFT TETRISゲーム画面"></canvas><div id="status" class="status">画面をタップして開始</div></div>
-<p class="help">中央の「回転」ボタンで向きを変えられます。</p>
+<div class="game-wrap"><canvas id="game" width="300" height="480" aria-label="SHIFT TETRISゲーム画面"></canvas><div id="status" class="status"><div id="statusContent">画面をタップして開始</div></div></div>
+<p class="help">ゲームオーバー後は最終スコアを表示し、「もう一度遊ぶ」を押すまで停止します。</p>
 </section>
 </main>
 <div class="controls"><button id="left" aria-label="左へ移動">◀</button><button id="rotate" class="rotate" aria-label="回転">↻ 回転</button><button id="right" aria-label="右へ移動">▶</button><button id="down" aria-label="下へ移動">▼</button></div>
@@ -32,33 +32,35 @@ header{display:flex;justify-content:space-between;align-items:center;margin-bott
 const canvas=document.getElementById('game');
 const ctx=canvas.getContext('2d');
 const status=document.getElementById('status');
+const statusContent=document.getElementById('statusContent');
 const scoreEl=document.getElementById('score');
 const levelEl=document.getElementById('level');
 const linesEl=document.getElementById('lines');
 const W=10,H=16,S=30;
 const colors=['transparent','#65e0b0','#ffcc66','#78a8ff','#ef7dff','#ff7979','#6fe57a','#ff9a62'];
 const shapes=[[[1,1,1,1]],[[1,1],[1,1]],[[0,1,0],[1,1,1]],[[1,0,0],[1,1,1]],[[0,0,1],[1,1,1]],[[0,1,1],[1,1,0]],[[1,1,0],[0,1,1]]];
-let board,piece,score=0,lines=0,level=1,running=false,lastDrop=0,startTime=0;
-function reset(){board=Array.from({length:H},()=>Array(W).fill(0));score=0;lines=0;level=1;update();spawn()}
-function spawn(){const id=1+Math.floor(Math.random()*7);const m=shapes[id-1].map(r=>r.slice());piece={id,m,x:Math.floor((W-m[0].length)/2),y:0};if(collide(piece.x,piece.y,piece.m)){reset()}}
+let board,piece,score=0,lines=0,level=1,running=false,gameOver=false,lastDrop=0,startTime=0;
+function reset(){board=Array.from({length:H},()=>Array(W).fill(0));piece=null;score=0;lines=0;level=1;gameOver=false;update();spawn()}
+function spawn(){const id=1+Math.floor(Math.random()*7);const m=shapes[id-1].map(r=>r.slice());const next={id,m,x:Math.floor((W-m[0].length)/2),y:0};if(collide(next.x,next.y,next.m)){finishGame();return}piece=next}
+function finishGame(){running=false;gameOver=true;piece=null;statusContent.innerHTML=`<div class="status-title">GAME OVER</div><span class="final-label">FINAL SCORE</span><strong class="final-score">${score}</strong><button id="restartButton" class="restart" type="button">もう一度遊ぶ</button>`;status.classList.add('show');document.getElementById('restartButton').addEventListener('click',startNewGame)}
+function startNewGame(){reset();running=true;status.classList.remove('show');lastDrop=performance.now();startTime=lastDrop}
 function collide(px,py,m){for(let y=0;y<m.length;y++)for(let x=0;x<m[y].length;x++)if(m[y][x]){const bx=px+x,by=py+y;if(bx<0||bx>=W||by>=H||(by>=0&&board[by][bx]))return true}return false}
 function merge(){piece.m.forEach((r,y)=>r.forEach((v,x)=>{if(v&&piece.y+y>=0)board[piece.y+y][piece.x+x]=piece.id}))}
 function clearLines(){let n=0;for(let y=H-1;y>=0;y--){if(board[y].every(Boolean)){board.splice(y,1);board.unshift(Array(W).fill(0));n++;y++}}if(n){lines+=n;score+=[0,100,300,500,800][n]*level;level=1+Math.floor(lines/8);update()}}
 function update(){scoreEl.textContent=score;levelEl.textContent=level;linesEl.textContent=lines}
-function drop(){if(!running)return;if(!collide(piece.x,piece.y+1,piece.m)){piece.y++}else{merge();clearLines();spawn()}}
-function move(dx){ensureRunning();if(!collide(piece.x+dx,piece.y,piece.m))piece.x+=dx}
-function rotate(){ensureRunning();const rotated=piece.m[0].map((_,i)=>piece.m.map(r=>r[i]).reverse());const kicks=[0,-1,1,-2,2];for(const dx of kicks){if(!collide(piece.x+dx,piece.y,rotated)){piece.x+=dx;piece.m=rotated;return}}}
-function ensureRunning(){if(!running)start()}
-function start(){running=true;status.classList.remove('show');lastDrop=performance.now();startTime=lastDrop}
+function drop(){if(!running||!piece)return;if(!collide(piece.x,piece.y+1,piece.m)){piece.y++}else{merge();clearLines();spawn()}}
+function move(dx){if(!running||!piece)return;if(!collide(piece.x+dx,piece.y,piece.m))piece.x+=dx}
+function rotate(){if(!running||!piece)return;const rotated=piece.m[0].map((_,i)=>piece.m.map(r=>r[i]).reverse());const kicks=[0,-1,1,-2,2];for(const dx of kicks){if(!collide(piece.x+dx,piece.y,rotated)){piece.x+=dx;piece.m=rotated;return}}}
+function start(){if(gameOver)return;running=true;status.classList.remove('show');lastDrop=performance.now();startTime=lastDrop}
 function drawCell(x,y,id){ctx.fillStyle=colors[id];ctx.fillRect(x*S+1,y*S+1,S-2,S-2);ctx.strokeStyle='rgba(255,255,255,.22)';ctx.strokeRect(x*S+2,y*S+2,S-4,S-4)}
 function render(){ctx.fillStyle='#080a0f';ctx.fillRect(0,0,canvas.width,canvas.height);for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(board[y][x])drawCell(x,y,board[y][x]);if(piece)piece.m.forEach((r,y)=>r.forEach((v,x)=>{if(v)drawCell(piece.x+x,piece.y+y,piece.id)}))}
 function loop(now){if(running){const elapsed=Math.floor((now-startTime)/10000);const speed=Math.max(110,700-elapsed*55);if(now-lastDrop>=speed){drop();lastDrop=now}}render();requestAnimationFrame(loop)}
 function bind(id,fn){const el=document.getElementById(id);let last=0;const fire=e=>{e.preventDefault();const now=Date.now();if(now-last<180)return;last=now;fn()};el.addEventListener('touchend',fire,{passive:false});el.addEventListener('click',fire)}
-bind('left',()=>move(-1));bind('right',()=>move(1));bind('rotate',rotate);bind('down',()=>{ensureRunning();drop()});
-canvas.addEventListener('touchend',e=>{e.preventDefault();ensureRunning()},{passive:false});
-canvas.addEventListener('click',ensureRunning);
+bind('left',()=>move(-1));bind('right',()=>move(1));bind('rotate',rotate);bind('down',drop);
+canvas.addEventListener('touchend',e=>{e.preventDefault();if(!running&&!gameOver)start()},{passive:false});
+canvas.addEventListener('click',()=>{if(!running&&!gameOver)start()});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&running)lastDrop=performance.now()});
-reset();status.classList.add('show');requestAnimationFrame(loop);setTimeout(start,350);
+reset();statusContent.textContent='画面をタップして開始';status.classList.add('show');requestAnimationFrame(loop);setTimeout(start,350);
 })();
 </script>
 </body>
