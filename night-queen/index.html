@@ -32,9 +32,29 @@ function birth(){s.phase=0;scene('PROLOGUE · 誕生','生まれた日','小さ�
 function reveal(){s.phase=2;s.look=Math.floor(Math.random()*5);scene('20 YEARS LATER','主人公・20歳','20年後。\n\n「私、絶対に人生を変えてみせる」\n\n彼女が選んだのは、眠らない街の世界だった。','hero','normal',[['夜の街へ ▶',first]])}
 function first(){s.phase=3;scene('FIRST NIGHT','店長・橘 真理','「今日からあなたもCLUB LUNAの一員よ。\n見た目だけじゃダメ。お客さんの心をつかみなさい」','rival','normal',[['ドレスを選ぶ',dress]])}
 function dress(){scene('DRESS ROOM','初出勤の準備','今夜、どんな印象で勝負する？','hero','normal',[['清楚な白系ドレス：信頼＋5',()=>{s.dress=0;s.love+=5;meet()}],['大胆な赤ドレス：売上＋¥2,000',()=>{s.dress=1;s.money+=2000;meet()}],['上品な黒ドレス：体力＋5',()=>{s.dress=2;s.hp=Math.min(100,s.hp+5);meet()}]])}
-function meet(){s.phase=4;let i=(s.day-1)%guests.length,g=guests[i];s.customer=i;let old=s.mem[i]||0;scene('TABLE '+s.day+' · 接客',g.name+' / '+g.age+'歳','「'+(old>0?'また会えたね。前回は楽しかったよ。 '+g.line:g.line)+'」',g,'normal',g.choices.map((a,j)=>[(j+1)+'　'+a[0],()=>answer(j)]),g.type+' · 予算 ¥'+g.budget.toLocaleString())}
-function answer(i){let g=guests[s.customer],a=g.choices[i],delta=a[1],gain=Math.min(g.budget,Math.max(1000,a[2]+Math.floor(s.love/10)*600));s.love=Math.max(0,Math.min(100,s.love+delta));s.money+=gain;s.hp=Math.max(0,s.hp-19);s.mem[s.customer]=(s.mem[s.customer]||0)+delta;let mood=delta>=16?'happy':delta<=-10?'angry':delta>=8?'shy':'normal';scene('REACTION · 表情変化',g.name,a[3],g,mood,[['営業結果を見る ▶',end]],'売上 ＋¥'+gain.toLocaleString()+' / 好感度 '+(delta>=0?'+':'')+delta);$('result').innerHTML='<div class="result">今回の売上 <b>¥'+gain.toLocaleString()+'</b><div class="bar"><i style="width:'+s.love+'%"></i></div>好感度 '+s.love+'/100</div>'}
-function end(){scene('NIGHT RESULT','DAY '+s.day+' 終了','今夜の営業が終わった。\n累計売上 ¥'+s.money.toLocaleString()+'\n\n'+(s.love<25?'噂が悪くなっている。接客を見直そう。':s.love>75?'指名が増え始めた！この調子で上を目指そう。':'次の夜はどんな客が来るだろう？'),'hero','normal',[['翌日の営業へ ▶',()=>{s.day++;s.hp=Math.min(100,s.hp+25);meet()}],['最初から遊ぶ',()=>{localStorage.removeItem('nightqueen-v2');s={phase:0,day:1,money:0,love:50,hp:100,look:0,customer:0,mem:{},dress:0};birth()}]])}
-if(s.phase>=2){scene('WELCOME BACK','NIGHT QUEEN','前回の続きから遊べます。','hero','normal',[['続きをプレイ',()=>{if(s.phase===2)first();else meet()}],['最初から',()=>{s={phase:0,day:1,money:0,love:50,hp:100,look:0,customer:0,mem:{},dress:0};birth()}]])}else birth();
+
+const topics=[
+{title:'仕事と本音',lines:['最近、仕事のことで悩んでいてさ。君ならどうする？','実は誰にも言ってない話があるんだ。','俺の仕事って、どう思う？'],opts:[['最後まで聞き、気持ちを受け止める',12,'「ちゃんと聞いてくれるんだな」'],['具体的な解決策を一緒に考える',8,'「考え方が面白いね」'],['冗談で場を明るくする',3,'「少し気が楽になった」'],['話を遮って自慢話をする',-16,'「俺の話、聞いてた？」']]},
+{title:'休日と趣味',lines:['休みの日って何してる？','最近、新しい趣味を探してるんだ。','俺の意外な趣味、聞いてくれる？'],opts:[['相手の趣味を詳しく聞く',12,'「そこまで聞いてくれるの？」'],['自分の趣味と共通点を探す',8,'「一緒に楽しめそうだな」'],['今度のイベントに誘う',4,'「予定を見てみるよ」'],['興味がないと顔に出す',-18,'「つまらなかった？」']]},
+{title:'恋愛と距離感',lines:['君はどんな人がタイプ？','俺って、どういう男に見える？','今日は少し寂しい気分でさ。'],opts:[['誠実に答え、相手にも尋ねる',11,'「そういう話ができるのはいいね」'],['少し照れて笑う',8,'「照れるところ、いいね」'],['大げさに褒め続ける',-3,'「それ本音？」'],['他の客と比較してからかう',-17,'「比較するなよ」']]},
+{title:'店内の噂',lines:['あのNo.1の麗華ってどんな人？','最近この店、雰囲気変わったね。','他のキャストと仲良いの？'],opts:[['他のキャストの良さも伝える',11,'「感じがいい子だね」'],['自分の目標を語る',9,'「応援したくなるな」'],['秘密を守りながら話す',8,'「信用できるね」'],['ライバルの悪口を言う',-20,'「陰口は嫌いだな」']]},
+{title:'将来の夢',lines:['5年後、君はどうなっていたい？','この仕事を選んだ理由は？','夢を持つって大事だよね。'],opts:[['具体的な目標を話す',14,'「芯があるんだね」'],['相手の夢も聞く',11,'「久しぶりに夢を語ったよ」'],['まだ探していると正直に話す',5,'「正直でいいね」'],['適当に話を合わせる',-12,'「本心じゃないだろ？」']]}
+];
+function shuffle(arr){for(let i=arr.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]]}return arr}
+function ensureNight(){if(!Array.isArray(s.lineup)||s.lineupDay!==s.day){s.lineup=shuffle(guests.map((_,i)=>i)).slice(0,3);s.lineupDay=s.day;s.seat=0;s.round=0;s.usedTopics=[]}if(!s.mem)s.mem={};}
+function meet(){s.phase=4;ensureNight();if(s.seat>=s.lineup.length)return end();let i=s.lineup[s.seat],g=guests[i];s.customer=i;s.round=0;s.usedTopics=[];let old=s.mem[i]||0;scene('TABLE '+(s.seat+1)+'/3 · 来店',g.name+' / '+g.age+'歳','「'+(old>0?'また会えたね！ '+g.line:g.line)+'」',g,'normal', [['席につく ▶',()=>round()]],g.type+' · 今夜の予算目安 ¥'+g.budget.toLocaleString());}
+function round(){let g=guests[s.customer];if(s.round===0){let arr=g.choices;scene('ROUND 1/3 · 第一印象',g.name,'「'+g.line+'」',g,'normal',arr.map((o,j)=>[(j+1)+'　'+o[0],()=>respond(o[1],o[3],1,o[2])]),'まずは相手の性格を見極めよう');return}
+if(s.round===1){let avail=topics.map((_,i)=>i).filter(i=>!s.usedTopics.includes(i));let t=avail[Math.floor(Math.random()*avail.length)];s.topic=t;s.usedTopics.push(t);let q=topics[t];let line=q.lines[Math.floor(Math.random()*q.lines.length)];scene('ROUND 2/3 · '+q.title,g.name,'「'+line+'」',g,'normal',q.opts.map((o,j)=>[(j+1)+'　'+o[0],()=>respond(o[1],o[2],2,0)]),'前の反応を思い出して選ぼう');return}
+let prior=s.mem[s.customer]||0;
+let orderOptions=[
+['今日は無理せず楽しんでください',10,'「気遣ってくれてありがとう」',Math.min(8000,g.budget)],
+['好きなお酒を一緒に選びませんか？',5,'「それなら頼もうかな」',Math.min(26000,g.budget)],
+['特別なボトルを提案する',prior>=15?12:-13,prior>=15?'「君のためならいいよ」':'「急に高いのはちょっと…」',prior>=15?Math.min(88000,g.budget):3000],
+['次回来店の約束をする',prior>=0?14:-6,prior>=0?'「来週また顔を出すよ」':'「まだ約束は早いかな」',Math.min(12000,g.budget)]
+];scene('ROUND 3/3 · 注文と約束',g.name,'「今日は楽しかった。最後にどうする？」',g,'normal',orderOptions.map((o,j)=>[(j+1)+'　'+o[0],()=>respond(o[1],o[2],3,o[3])]),'信頼が高い客ほど高額注文につながりやすい');
+}
+function respond(delta,line,roundNum,amount){let g=guests[s.customer];s.mem[s.customer]=(s.mem[s.customer]||0)+delta;s.love=Math.max(0,Math.min(100,s.love+Math.round(delta/2)));s.hp=Math.max(0,s.hp-6);let gain=roundNum===3?amount:roundNum===1?Math.min(6000,Math.round(amount*.12)):0;s.money+=gain;s.round=roundNum;let mood=delta>=11?'happy':delta<=-10?'angry':delta>=5?'shy':'normal';let opts=roundNum<3?[['次の会話へ ▶',round]]:[['この席の接客を終える ▶',()=>{s.seat++;meet()}]];scene('REACTION · '+roundNum+'/3',g.name,line,g,mood,opts,'今回の好感度 '+(delta>=0?'+':'')+delta+' / 売上 +¥'+gain.toLocaleString());$('result').innerHTML='<div class="result">このお客様との信頼 '+s.mem[s.customer]+'<div class="bar"><i style="width:'+Math.max(0,Math.min(100,50+s.mem[s.customer]))+'%"></i></div></div>';}
+function end(){s.phase=5;scene('NIGHT RESULT','DAY '+s.day+' 営業終了','今夜は3組を接客した。\\n累計売上 ¥'+s.money.toLocaleString()+'\\n\\n客の反応と約束は次回以降も残る。','hero','normal',[['翌日の営業へ ▶',()=>{s.day++;s.hp=Math.min(100,s.hp+28);s.lineupDay=null;meet()}],['最初から遊ぶ',()=>{localStorage.removeItem('nightqueen-v2');s={phase:0,day:1,money:0,love:50,hp:100,look:0,customer:0,mem:{},dress:0};birth()}]])}
+if(s.phase>=2){scene('WELCOME BACK','NIGHT QUEEN','前回の続きから遊べます。','hero','normal',[['続きをプレイ',()=>{if(s.phase===2)first();else if(s.phase===5)end();else meet()}],['最初から',()=>{s={phase:0,day:1,money:0,love:50,hp:100,look:0,customer:0,mem:{},dress:0};birth()}]])}else birth();
 })();
 </script></body></html>
