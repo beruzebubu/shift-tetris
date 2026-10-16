@@ -30,11 +30,11 @@ const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 const shuffle=a=>{a=[...a];for(let i=a.length-1;i>0;i--){let j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]]}return a};
 let s;
 const RECOVERY_MS=60000, RECOVERY_POINTS=5;
-const STAMINA_KEY='night-queen-stamina-v1';
+const STAMINA_KEY='night-queen-stamina-v2';
 const japanDay=()=>new Date(Date.now()+9*60*60*1000).toISOString().slice(0,10);
 let staminaMemory=null, resumeRecovery=null;
 function readStamina(){
- let value=staminaMemory;try{const raw=localStorage.getItem(STAMINA_KEY);if(raw)value=JSON.parse(raw)}catch{}
+ let value=staminaMemory;try{const raw=localStorage.getItem(STAMINA_KEY)||localStorage.getItem('night-queen-stamina-v1');if(raw)value=JSON.parse(raw)}catch{}
  const now=Date.now(),day=japanDay();
  let energy=clamp(Number.isFinite(value?.energy)?value.energy:100,0,100);
  let recoveredAt=Number.isFinite(value?.recoveredAt)?Math.min(value.recoveredAt,now):now;
