@@ -41,20 +41,51 @@ const topics=[
 {title:'将来の夢',lines:['5年後、君はどうなっていたい？','この仕事を選んだ理由は？','夢を持つって大事だよね。'],opts:[['具体的な目標を話す',14,'「芯があるんだね」'],['相手の夢も聞く',11,'「久しぶりに夢を語ったよ」'],['まだ探していると正直に話す',5,'「正直でいいね」'],['適当に話を合わせる',-12,'「本心じゃないだろ？」']]}
 ];
 function shuffle(arr){for(let i=arr.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]]}return arr}
-function ensureNight(){if(!Array.isArray(s.lineup)||s.lineupDay!==s.day){s.lineup=shuffle(guests.map((_,i)=>i)).slice(0,3);s.lineupDay=s.day;s.seat=0;s.round=0;s.usedTopics=[]}if(!s.mem)s.mem={};}
-function meet(){s.phase=4;ensureNight();if(s.seat>=s.lineup.length)return end();let i=s.lineup[s.seat],g=guests[i];s.customer=i;s.round=0;s.usedTopics=[];let old=s.mem[i]||0;scene('TABLE '+(s.seat+1)+'/3 · 来店',g.name+' / '+g.age+'歳','「'+(old>0?'また会えたね！ '+g.line:g.line)+'」',g,'normal', [['席につく ▶',()=>round()]],g.type+' · 今夜の予算目安 ¥'+g.budget.toLocaleString());}
-function round(){let g=guests[s.customer];if(s.round===0){let arr=g.choices;scene('ROUND 1/3 · 第一印象',g.name,'「'+g.line+'」',g,'normal',arr.map((o,j)=>[(j+1)+'　'+o[0],()=>respond(o[1],o[3],1,o[2])]),'まずは相手の性格を見極めよう');return}
-if(s.round===1){let avail=topics.map((_,i)=>i).filter(i=>!s.usedTopics.includes(i));let t=avail[Math.floor(Math.random()*avail.length)];s.topic=t;s.usedTopics.push(t);let q=topics[t];let line=q.lines[Math.floor(Math.random()*q.lines.length)];scene('ROUND 2/3 · '+q.title,g.name,'「'+line+'」',g,'normal',q.opts.map((o,j)=>[(j+1)+'　'+o[0],()=>respond(o[1],o[2],2,0)]),'前の反応を思い出して選ぼう');return}
-let prior=s.mem[s.customer]||0;
-let orderOptions=[
-['今日は無理せず楽しんでください',10,'「気遣ってくれてありがとう」',Math.min(8000,g.budget)],
-['好きなお酒を一緒に選びませんか？',5,'「それなら頼もうかな」',Math.min(26000,g.budget)],
-['特別なボトルを提案する',prior>=15?12:-13,prior>=15?'「君のためならいいよ」':'「急に高いのはちょっと…」',prior>=15?Math.min(88000,g.budget):3000],
-['次回来店の約束をする',prior>=0?14:-6,prior>=0?'「来週また顔を出すよ」':'「まだ約束は早いかな」',Math.min(12000,g.budget)]
-];scene('ROUND 3/3 · 注文と約束',g.name,'「今日は楽しかった。最後にどうする？」',g,'normal',orderOptions.map((o,j)=>[(j+1)+'　'+o[0],()=>respond(o[1],o[2],3,o[3])]),'信頼が高い客ほど高額注文につながりやすい');
+
+function pick(arr){return arr[Math.floor(Math.random()*arr.length)]}
+function ensureNight(){if(!Array.isArray(s.lineup)||s.lineupDay!==s.day){s.lineup=shuffle(guests.map((_,i)=>i)).slice(0,3);s.lineupDay=s.day;s.seat=0;s.round=0;s.usedTopics=[];s.nightSales=0}if(!s.mem)s.mem={};if(!s.spent)s.spent={};}
+function meet(){
+s.phase=4;ensureNight();if(s.seat>=s.lineup.length)return end();
+let i=s.lineup[s.seat],g=guests[i];s.customer=i;s.round=0;s.usedTopics=[];s.chance=false;s.tableSales=0;
+let arrival=pick([{label:'一軒目・素面',drunk:0,money:1.05,temper:0,stay:0},{label:'二軒目・ほろ酔い',drunk:1,money:1,temper:1,stay:1},{label:'三軒目・かなり酔っている',drunk:3,money:.5,temper:2,stay:-1},{label:'仕事帰り・疲労気味',drunk:0,money:.8,temper:1,stay:-1},{label:'祝いの席・上機嫌',drunk:1,money:1.35,temper:-1,stay:2},{label:'嫌なことがあった夜',drunk:0,money:.7,temper:2,stay:0}]);
+s.arrival=arrival;s.drunk=arrival.drunk;s.mood=45+Math.floor(Math.random()*26)-arrival.temper*7+Math.round((s.mem[i]||0)/3);
+s.stay=Math.max(2,Math.min(10,4+arrival.stay+Math.floor(Math.random()*4)));s.turn=0;
+let spent=s.spent[i]||0;s.remaining=Math.max(0,Math.round(g.budget*arrival.money)-spent);
+scene('TABLE '+(s.seat+1)+'/3 · '+arrival.label,g.name+' / '+g.age+'歳','「'+(s.mem[i]>12?'また会えたな。':'初めまして。')+' '+pick([g.line,'今日はいつもと違う気分なんだ。','ちょっと話を聞いてくれないか？'])+'」',g,'normal',[['接客を始める ▶',talk]],g.type+' · 来店状況は毎回変化');
 }
-function respond(delta,line,roundNum,amount){let g=guests[s.customer];s.mem[s.customer]=(s.mem[s.customer]||0)+delta;s.love=Math.max(0,Math.min(100,s.love+Math.round(delta/2)));s.hp=Math.max(0,s.hp-6);let gain=roundNum===3?amount:roundNum===1?Math.min(6000,Math.round(amount*.12)):0;s.money+=gain;s.round=roundNum;let mood=delta>=11?'happy':delta<=-10?'angry':delta>=5?'shy':'normal';let opts=roundNum<3?[['次の会話へ ▶',round]]:[['この席の接客を終える ▶',()=>{s.seat++;meet()}]];scene('REACTION · '+roundNum+'/3',g.name,line,g,mood,opts,'今回の好感度 '+(delta>=0?'+':'')+delta+' / 売上 +¥'+gain.toLocaleString());$('result').innerHTML='<div class="result">このお客様との信頼 '+s.mem[s.customer]+'<div class="bar"><i style="width:'+Math.max(0,Math.min(100,50+s.mem[s.customer]))+'%"></i></div></div>';}
-function end(){s.phase=5;scene('NIGHT RESULT','DAY '+s.day+' 営業終了','今夜は3組を接客した。\\n累計売上 ¥'+s.money.toLocaleString()+'\\n\\n客の反応と約束は次回以降も残る。','hero','normal',[['翌日の営業へ ▶',()=>{s.day++;s.hp=Math.min(100,s.hp+28);s.lineupDay=null;meet()}],['最初から遊ぶ',()=>{localStorage.removeItem('nightqueen-v2');s={phase:0,day:1,money:0,love:50,hp:100,look:0,customer:0,mem:{},dress:0};birth()}]])}
+function talk(){
+let g=guests[s.customer];if(s.hp<=0)return leave('体力の限界。店長が席を引き継いだ。','normal');
+if(s.turn>=s.stay)return leave('「そろそろ帰る時間だ。またな」','normal');
+if(s.mood<=12)return leave('「チェンジ。別の子を呼んで」','angry');
+if(s.drunk>=4){scene('泥酔・安全対応',g.name,'「もう飲めない……」\nお酒の追加注文は受けず、休憩と帰宅を優先しよう。',g,'normal',[['水を用意して休んでもらう',()=>act(9,'「助かったよ。ありがとう」',0,0)],['黒服を呼んで安全に帰宅を手配',()=>leave('黒服が安全に帰宅を手配した。','normal')],['体調を確認する',()=>act(7,'「少し落ち着いた」',0,0)],['今日はここで席を終える',()=>leave('無理せず営業を終えた。','normal')]],'泥酔時は注文不可');return}
+let event=Math.random(),options=[],line='',tag='FREE TALK',kind='talk';
+if(s.chance&&event<.48){tag='CHANCE TIME';line='「今日は楽しいな。もう少しここにいたい！」';kind='chance';options=[['延長を提案する',()=>act(12,'「よし、もう少し話そう！」',s.drunk>=3?0:Math.min(24000,s.remaining),2)],['記念のボトルを相談する',()=>act(s.drunk>=2?-3:12,'「今日は特別な夜だ」',s.drunk>=2?0:Math.min(56000,s.remaining),0)],['話をじっくり聞く',()=>act(10,'「君と話すのが楽しい」',0,1)],['盛り上がっているうちに切り上げる',()=>leave('「また指名するよ」','happy')]]}
+else if(event<.25){tag='突然のトラブル';kind='trouble';line=pick(['「さっきの言い方、ちょっと気に入らないな」','「隣の席、ずいぶん盛り上がってるね」','「約束したこと、覚えてる？」']);options=[['まず謝って事情を聞く',()=>act(11,'「ちゃんと話してくれるんだな」',0,0)],['冗談でごまかす',()=>act(-8,'「ふざけてるのか？」',0,0)],['店長に助けを求める',()=>act(4,'店長が間に入って落ち着いた。',0,0)],['反論して押し切る',()=>act(-24,'「もういい。チェンジ！」',0,0)]]}
+else if(event<.55){tag='注文・駆け引き';kind='order';line=pick(['「今日は何を飲もうかな」','「何かおすすめある？」','「もう少し楽しめるかな？」']);options=[['予算に合うドリンクを提案',()=>act(8,'「それなら頼もう」',Math.min(7000,s.remaining),0)],['好みを聞いてボトルを選ぶ',()=>act(s.drunk>=2?1:9,'「それ、良さそうだね」',s.drunk>=2?0:Math.min(32000,s.remaining),0)],['注文せず会話を楽しむ',()=>act(11,'「気遣いが嬉しいよ」',0,1)],['高額注文を強く迫る',()=>act(-22,'「金の話ばかりだな」',0,0)]]}
+else {let available=topics.map((_,i)=>i).filter(i=>!s.usedTopics.includes(i));if(!available.length){s.usedTopics=[];available=topics.map((_,i)=>i)}let ti=pick(available),t=topics[ti];s.usedTopics.push(ti);tag=t.title;line=pick(t.lines);options=t.opts.map(o=>[o[0],()=>act(o[1],o[2],0,0)]);}
+s.currentKind=kind;
+let situ='来店：'+s.arrival.label+' ｜ 機嫌 '+Math.max(0,Math.min(100,s.mood))+' ｜ 残り時間 '+Math.max(0,s.stay-s.turn)+' ｜ '+(s.chance?'★ チャンスタイム中':'通常接客');
+scene(tag+' · '+(s.turn+1)+'回目',g.name,'「'+line+'」',g,s.mood<28?'angry':s.mood>75?'happy':'normal',options,situ);
+}
+function act(delta,line,amount,extra){
+let g=guests[s.customer];s.turn++;s.hp=Math.max(0,s.hp-5-Math.floor(Math.random()*5));
+let adjusted=delta+(s.drunk>=2&&delta<0?-4:0)+(Math.random()<.12?-6:0);
+s.mood=Math.max(0,Math.min(100,s.mood+adjusted));s.mem[s.customer]=(s.mem[s.customer]||0)+Math.round(adjusted/2);
+s.love=Math.max(0,Math.min(100,s.love+Math.round(adjusted/3)));
+let earned=Math.max(0,Math.min(amount,s.remaining));s.remaining-=earned;s.money+=earned;s.nightSales=(s.nightSales||0)+earned;s.tableSales+=earned;s.spent[s.customer]=(s.spent[s.customer]||0)+earned;
+if(extra)s.stay=Math.min(12,s.stay+extra);
+if(s.mood>=77&&Math.random()<.65){s.chance=true;s.stay=Math.min(12,s.stay+1)}
+if(s.mood<22&&Math.random()<.65){s.mood=0}
+if(s.drunk<3&&Math.random()<.13)s.drunk++;
+let mood=s.mood<=22?'angry':adjusted>=8?'happy':adjusted>=3?'shy':'normal';
+let next=s.mood<=12?()=>leave('「チェンジ！」\n不機嫌になり、指名を外された。','angry'):s.turn>=s.stay?()=>leave('「そろそろ帰る。また会おう」','normal'):talk;
+scene(s.mood<=12?'CHANGE 発生':s.chance?'★ CHANCE TIME':'REACTION · '+s.turn+'回目',g.name,line,g,mood,[['次へ ▶',next]],'機嫌 '+s.mood+' ｜ 今回の売上 +¥'+earned.toLocaleString()+' ｜ 残り時間 '+Math.max(0,s.stay-s.turn));
+}
+function leave(line,mood){
+let g=guests[s.customer];scene('退席 · 接客 '+s.turn+'回',g.name,line+'\n\nこの席の売上 ¥'+s.tableSales.toLocaleString(),g,mood,[['次の席へ ▶',()=>{s.seat++;meet()}]],s.mood<=12?'チェンジ発生：次回来店時の関係に悪影響':'次回来店時に今回の関係が引き継がれる');
+}
+function end(){
+s.phase=5;scene('NIGHT RESULT','DAY '+s.day+' 営業終了','今夜は3組を接客した。\n今夜の売上 ¥'+(s.nightSales||0).toLocaleString()+'\n累計売上 ¥'+s.money.toLocaleString()+'\n\n明日の客・酔い具合・会話はまた変わる。','hero','normal',[['翌日の営業へ ▶',()=>{s.day++;s.hp=Math.min(100,s.hp+30);s.lineupDay=null;meet()}],['最初から遊ぶ',()=>{localStorage.removeItem('nightqueen-v2');s={phase:0,day:1,money:0,love:50,hp:100,look:0,customer:0,mem:{},dress:0};birth()}]])}
 if(s.phase>=2){scene('WELCOME BACK','NIGHT QUEEN','前回の続きから遊べます。','hero','normal',[['続きをプレイ',()=>{if(s.phase===2)first();else if(s.phase===5)end();else meet()}],['最初から',()=>{s={phase:0,day:1,money:0,love:50,hp:100,look:0,customer:0,mem:{},dress:0};birth()}]])}else birth();
 })();
 </script></body></html>
