@@ -233,7 +233,7 @@ $('showcatalog').onclick=()=>{let el=$('catalog');el.classList.toggle('on');$('s
 $('recover-resume').onclick=()=>{syncStamina();if(s.energy<=0)return recoveryStatus();const resume=resumeRecovery;resumeRecovery=null;$('recovery-dialog').close();update();if(resume)resume()};
 setInterval(()=>{if(s){syncStamina();$('energy').textContent=s.energy;recoveryStatus()}},1000);
 $('recover-open').onclick=()=>openRecovery();$('recover-free').onclick=freeRecovery;$('recover-close').onclick=()=>{$('recovery-dialog').close();resumeRecovery=null};
-window.addEventListener('focus',()=>{if(s){syncStamina();update()}});window.addEventListener('storage',event=>{if(event.key===STAMINA_KEY&&s){syncStamina();update()}});
+window.addEventListener('focus',()=>{if(s){syncStamina();update()}});window.addEventListener('storage',event=>{if(event.key===STAMINA_KEY&&s){syncStamina();$('energy').textContent=s.energy;recoveryStatus()}});
 $('reset').onclick=()=>{if(confirm('最初からやり直しますか？'))start()};start();
 
 </script></body></html>
