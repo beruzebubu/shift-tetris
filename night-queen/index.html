@@ -29,11 +29,36 @@ function start(){s.phase='intro';let h=pick(HEROES);s.hero={...h,name:'あなた
 function newNight(){s.phase='play';s.seat=0;s.lineup=[...MEN].sort(()=>Math.random()-.5).slice(0,3);s.nightSales=0;newCustomer();}
 function ageAffinity(g){let gap=Math.abs((s.hero?.age||20)-g.age);let bias=g.age<=30?2:g.age>=55?-3:0;return Math.max(-8,Math.min(6,5-Math.floor(gap/6)+bias));}
 function newCustomer(){if(s.seat>=3){return show(s.hero,'あなた','今日の営業が終わった。\n今夜の売上 '+money(s.nightSales)+'\n累計 '+money(s.money),'NIGHT RESULT', [['翌日の営業へ ▶',()=>{s.day++;s.energy=Math.min(100,s.energy+28);newNight()}]],'常連の関係は翌日も引き継がれる。')}
- s.g=s.lineup[s.seat];s.turn=0;s.castThisSeat=false;s.chance=false;s.topic=null;s.table=0;s.drunk=pick([0,0,1,1,2,3,4]);s.situation=pick(['一軒目・素面','二軒目・ほろ酔い','三軒目・酔っている','仕事帰り・疲労','祝いの席・上機嫌','嫌なことがあった夜']);if(s.situation.includes('三軒目'))s.drunk=Math.max(2,s.drunk);if(s.situation.includes('一軒目'))s.drunk=0;s.momentum=0;s.mood=Math.max(15,Math.min(90,39+rnd(24)+(s.charm-3)*6+ageAffinity(s.g)+(s.mem[s.g.id]||0)/3));s.stay=3+rnd(6);s.budget=Math.round(s.g.budget*pick([.45,.7,1,1.2]));s.cover=Math.min(s.budget,s.g.role.includes('フリーター')?3500:pick([5000,6000,8000]));s.budget-=s.cover;s.money+=s.cover;s.nightSales+=s.cover;s.table=s.cover;s.careCount=0;s.usedTopics=[];s.first=!s.met[s.g.id];s.met[s.g.id]=true;show(s.g,'来店','「'+(s.first?voice(s.g,'first'):voice(s.g,'again'))+'」','TABLE '+(s.seat+1)+'/3 · '+s.situation,[['席につく ▶',talk]],'セット料金 '+money(s.cover)+'を計上済み。客の状態と予算は毎回変わる。');}
+ s.g=s.lineup[s.seat];s.turn=0;s.castThisSeat=false;s.chance=false;s.topic=null;s.table=0;s.drunk=pick([0,0,1,1,2,3,4]);s.situation=pick(['一軒目・素面','二軒目・ほろ酔い','三軒目・酔っている','仕事帰り・疲労','祝いの席・上機嫌','嫌なことがあった夜']);if(s.situation.includes('三軒目'))s.drunk=Math.max(2,s.drunk);if(s.situation.includes('一軒目'))s.drunk=0;s.momentum=0;s.mood=Math.max(15,Math.min(90,39+rnd(24)+(s.charm-3)*6+ageAffinity(s.g)+(s.mem[s.g.id]||0)/3));s.stay=3+rnd(6);s.budget=Math.round(s.g.budget*pick([.45,.7,1,1.2]));s.cover=Math.min(s.budget,s.g.role.includes('フリーター')?3500:pick([5000,6000,8000]));s.budget-=s.cover;s.money+=s.cover;s.nightSales+=s.cover;s.table=s.cover;s.careCount=0;s.usedTopics=[];s.personalStep=0;s.first=!s.met[s.g.id];s.met[s.g.id]=true;show(s.g,'来店','「'+(s.first?voice(s.g,'first'):voice(s.g,'again'))+'」','TABLE '+(s.seat+1)+'/3 · '+s.situation,[['席につく ▶',talk]],'セット料金 '+money(s.cover)+'を計上済み。客の状態と予算は毎回変わる。');}
 const topics=[{q:'「実は最近、仕事がうまくいかなくて……」',a:[['何があったのか丁寧に聞く',12,'「話してよかった」'],['自分の経験を伝える',5,'「なるほどね」'],['笑わせようとする',1,'「まあ、そういう日もある」'],['話を遮る',-18,'「聞いてないの？」']]},{q:'「休日は何をしてるの？」',a:[['自分の趣味を話し、相手にも尋ねる',10,'「共通点があるね」'],['相手の趣味を詳しく聞く',12,'「詳しいね」'],['軽く冗談を言う',3,'「面白い子だ」'],['適当に答える',-13,'「興味なさそうだね」']]},{q:'「俺って、どんな男に見える？」',a:[['良いところを具体的に伝える',12,'「よく見てるね」'],['少し照れて答える',7,'「かわいい反応だね」'],['正直にまだ分からないと言う',4,'「まあ初対面だしね」'],['他の客と比べる',-18,'「それは嫌だな」']]},{q:'「君はこの仕事をどう思ってる？」',a:[['夢と目標を話す',11,'「応援したいね」'],['まだ勉強中と話す',9,'「素直でいいね」'],['相手の仕事について尋ねる',7,'「俺の話も聞く？」'],['お金の話だけする',-12,'「それだけなの？」']]}];
+const PERSON_SCENES={
+M01:['現場の職人と意見が割れてな。俺が折れるべきか？','相手の言い分も聞いてみたら？','「そうだな、頭ごなしはよくねえな」'],
+M02:['うちの若い運転手が無断で休みやがってよ。','事情を聞いてから決めたら？','「……確かに、理由も聞いてねえな」'],
+M03:['新規事業の企画が役員会で通らなくて。','どこが評価されなかったの？','「数字の根拠が弱かったのかも」'],
+M04:['今月も出張続きで、家族との時間が取れなくて。','家族とは最近どんな話をしたの？','「そういえば、ちゃんと聞いてなかったな」'],
+M05:['最近、趣味の店を始めようか迷っていてね。','何が一番楽しいと思う？','「好きなことを仕事にできたらいいね」'],
+M06:['不動産の契約が決まってさ。今日は祝い酒だ！','どんな物件だったの？','「駅前の大きな案件なんだよ！」'],
+M07:['昔の部下から久しぶりに連絡があってね。','どんな方だったんですか？','「真面目で、よく働く男だった」'],
+M08:['作ってたゲームがやっと完成しそうなんだ。','どんなゲームなの？','「一人で遊べる推理ゲームなんだ」'],
+M09:['同期が先に昇進したんだよ。悔しくてさ。','何が一番悔しかったの？','「自分も頑張ってたつもりだからさ」'],
+M10:['現場が立て込んで、今日はへとへとだよ。','どんな作業だったの？','「朝から足場を組んでたんだ」'],
+M11:['若い職人が独立したいって言い出してな。','応援したい気持ちもある？','「まあ、育てたやつだからな」'],
+M12:['新しく出した店の客足が読めなくてさ。','どんなお店なの？','「焼き鳥の店なんだけどな」'],
+M13:['転職の内定が出たけど、決めきれなくて。','今の会社と何が違うの？','「仕事は面白そうだけど、不安もあって」'],
+M14:['当直明けで、ようやく一息つけたよ。','少しは休めそうですか？','「明日は休みなんだ」'],
+M15:['今度、古いビルを買い取る話があってね。','どんな計画があるんですか？','「飲食店を入れたいんだよ」'],
+M16:['やりたい仕事があるんだけど、親に反対されてて。','どんな仕事がしたいの？','「映像を作る仕事なんだ」'],
+M17:['後援会の会合で意見が割れましてね。','どんな意見が対立したんですか？','「地域の交通の問題ですよ」'],
+M18:['仲間が現場でけがをして、心配でさ。','その方は大丈夫なんですか？','「幸い大きなけがじゃなかったよ」'],
+M19:['今月、店のナンバーワンを狙ってんだよね。','今は何位なの？','「あと少しで追いつけそうなんだ」'],
+M20:['娘の進路のことで、家で意見が分かれてね。','娘さん自身は何と言ってますか？','「本人の気持ちをもっと聞くべきかな」']
+};
+function personalTalk(){const g=s.g,story=PERSON_SCENES[g.id];if(!story)return false;const step=s.personalStep||0;if(step===0){s.personalStep=1;return show(g,'お客様の話','「'+story[0]+'」','PERSONAL TALK',[[story[1],()=>act(12,'「'+story[2].replace(/[「」]/g,'')+'」',0,0)],['その時、どんな気持ちだった？',()=>act(10,'「ちょっと複雑だったんだ」',0,0)],['今日はその話を忘れて楽しもうと誘う',()=>act(4,'「そういうのもいいな」',0,0)],['話を遮って注文を迫る',()=>act(-17,'「今その話じゃないだろ」',0,0)]],'仕事や生活の話は、本人の設定に基づく。')}
+if(step===1){s.personalStep=2;const line=g.id==='M17'?'「地元の人の足を守りたい。でも財源の問題もあるんです」':g.id==='M19'?'「でも売上ばっかり追ってると疲れるんだよね」':'「実は、そのことをまだ少し考えていてね」';return show(g,'話の続き',line,'PERSONAL FOLLOW UP',[['さっきの事情を踏まえて励ます',()=>act(11,'「ちゃんと聞いてくれてありがとう」',0,0)],['その後どうしたいか尋ねる',()=>act(10,'「まだ決めきれてないんだ」',0,0)],['一度気分転換を提案する',()=>act(6,'「少し気が楽になったよ」',0,0)],['無理に結論を出させる',()=>act(-9,'「簡単には決められないよ」',0,0)]],'同じ話題を引き継いでいる。')}return false}
 function talk(){if(s.energy<=0)return leave('体力の限界。黒服が席を引き継いだ。');if(s.turn>=s.stay)return leave('「'+voice(s.g,'bye')+'」');if(s.mood<13)return leave('「'+voice(s.g,'change')+'」');if(s.drunk>=4){if(s.careCount>=1)return show(s.g,'介抱後の判断','水を飲んで少し落ち着いた。今夜は無理に飲ませない方がよさそうだ。','SAFE CARE',[['黒服と帰宅手段を確認する',()=>leave('黒服と安全な帰宅を手配した')],['本人の希望を聞いて静かに見送る',()=>leave('落ち着くまで休んでもらい、見送った')],['少し休んでもらい、会話だけ続ける',()=>{s.drunk=2;s.stay=Math.max(s.turn+2,s.stay);talk()}]],'飲酒を勧めず、次の展開へ進む。');return show(s.g,'酔ったお客様','「ちょっと飲みすぎたかも……」','SAFE CARE',[['水を渡して様子を見る',()=>{s.careCount++;s.turn++;s.energy=Math.max(0,s.energy-3);s.drunk=3;show(s.g,'介抱','「水、ありがとう。ちょっと落ち着いた」','RECOVERY',[['会話に戻る',talk],['帰宅の手配をする',()=>leave('無理せず帰宅を手配した')]],'追加の酒は勧めない。')}],['黒服に相談し、帰宅を手配する',()=>leave('黒服と安全な帰宅を手配した')],['静かな席へ案内して休んでもらう',()=>{s.careCount++;s.drunk=3;s.turn++;show(s.g,'休憩','「少し楽になったよ」','RECOVERY',[['無理せず会話を再開',talk],['帰宅の手配をする',()=>leave('安全に帰宅を手配した')]],'飲酒の追加注文は受けない。')}]],'同じ介抱を繰り返さない。')}
  if(s.turn>=2&&!s.castThisSeat&&Math.random()<.2){s.castThisSeat=true;return castEvent()}
  if(s.turn===0){let g=s.g;return show(g,'接客開始','「'+(s.first?voice(s.g,'open'):voice(s.g,'back'))+'」','OPENING',s.first?[['名乗って今日の気分を聞く',()=>act(12,'「話しやすいね」',0,0)],['丁寧に挨拶する',()=>act(8,'「礼儀正しいね」',0,0)],['趣味を尋ねる',()=>act(7,'「じゃあ少し話そう」',0,0)],['いきなり高い酒を勧める',()=>act(-20,'「まだ早いよ」',0,0)]]:[['前回の話を思い出して聞く',()=>act(13,'「覚えててくれたんだ」',0,0)],['最近どうしていたか聞く',()=>act(9,'「気にかけてくれるんだ」',0,0)],['今日はどんな気分か聞く',()=>act(8,'「今日はね……」',0,0)],['初対面のように接する',()=>act(-12,'「俺のこと忘れた？」',0,0)]],s.situation);}
+ if((s.personalStep||0)<2 && (s.turn===1||Math.random()<.48)){if(personalTalk()!==false)return;}
  let v=Math.random();if(s.topic&&v<.65){let t=s.topic;s.topic=null;let follow=[
 {q:'「実は最近、仕事がうまくいかなくて……」',line:'「仕事で失敗した時って、どうやって気持ちを切り替える？」',a:[['まず何があったか聞いてみる',()=>act(12,'「ちゃんと話を聞いてくれるんだね」',0,0)],['頑張りすぎないでと伝える',()=>act(9,'「少し気が楽になったよ」',0,0)],['自分の失敗談で笑わせる',()=>act(5,'「そういうこともあるか」',0,0)],['仕事の話を打ち切る',()=>act(-12,'「まだ話してるのに」',0,0)]]},
 {q:'「休日は何をしてるの？」',line:'「へえ。じゃあ、休みが一日増えたら何をしたい？」',a:[['一緒に行きたい場所を話す',()=>act(11,'「それ、楽しそうだね」',0,0)],['相手の理想の休日を聞く',()=>act(10,'「実は行きたい所があってさ」',0,0)],['家でゆっくりしたいと答える',()=>act(5,'「そういうのもいいね」',0,0)],['興味なさそうに流す',()=>act(-10,'「聞いたのに冷たいな」',0,0)]]},
