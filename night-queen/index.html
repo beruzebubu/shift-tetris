@@ -100,9 +100,10 @@ function show(person,title,dialog,phase,options,sub='',mood='通常'){
  for(const [label,fn] of options){let b=document.createElement('button');b.textContent=label;b.addEventListener('click',()=>{if(!b.isConnected)return;syncStamina();if(s.phase==='play'&&s.energy<=0&&!/^(接客を続ける|席を交代する|次のお客様へ|席につく)/.test(label)){openRecovery(()=>{s.lastChoice=label;fn()});return}s.lastChoice=label;fn()});$('choices').append(b)}update();
 }
 function update(){ $('money').textContent=money(s.money);$('energy').textContent=s.energy;$('day').textContent='DAY '+s.day;$('moodstat').textContent=s.phase==='play'?Math.round(s.mood):'—';saveStamina();recoveryStatus();}
+const CAST_VOICES={"F01":{"style":"柔らかな笑顔／実は粘り強い","entry":"私もご一緒していいですか？","formal":"初めまして。お好みを伺ってもよろしいですか。","gap":"緊張してる。でも、ここで逃げたくないんだ。","team":"一人で抱えないで。一緒に考えよう。"},"F02":{"style":"黒髪クール／仲間には世話焼き","entry":"隣、いい？ 話の続き、聞かせて。","formal":"お話の途中に失礼します。私もご一緒してよろしいですか。","gap":"平気な顔してるけど、無理してるの分かるよ。水、飲んだ？","team":"私が飲み物を見るから、あなたは話を聞いてあげて。"},"F03":{"style":"華やかなツインテール／礼儀はきっちり","entry":"みゆも混ぜて！ 何のお話？","formal":"初めまして、みゆです。お邪魔でなければご一緒させてください。","gap":"派手って言われるけど、挨拶だけはちゃんとしたいんだ。","team":"盛り上げるのは任せて！ おすすめは一緒に決めよ。"},"F04":{"style":"落ち着いた雰囲気／勝負には熱い","entry":"いい雰囲気ね。少しご一緒してもいい？","formal":"今夜はゆっくり楽しんでいってくださいね。","gap":"勝負どころは譲りたくないの。やるなら二人で勝ちましょ。","team":"焦らずいきましょ。あなたの話を私がつなぐから。"},"F05":{"style":"黒のチョーカー／意外に細やか","entry":"ひなも座っていい？ 何の話してたの？","formal":"お飲み物、同じものでよろしいですか。","gap":"さっきグラスに触ってなかったよね。無理に勧めないでおこ。","team":"私、飲み物の好み聞いてみる。話の続きお願い！"},"F06":{"style":"淡いピンク／優しいけれど断れる","entry":"お疲れさま。私も一緒にいいかな。","formal":"お疲れではありませんか。どうぞご無理なさらず。","gap":"嫌なことは嫌って言っていいんだよ。私もちゃんと断るから。","team":"お客様のペースでいこう。注文は私が確認するね。"},"F07":{"style":"黒いドレス／強気だが礼儀正しい","entry":"手、貸そうか。二人ならもっといけるでしょ。","formal":"失礼いたします。ご希望を伺ってから、ご用意しますね。","gap":"強気と失礼は別。そこは間違えたくないんだ。","team":"あなたが話を広げて。私が注文をまとめる。"},"F08":{"style":"明るい金髪／接客では端正な敬語","entry":"おっ、楽しそうじゃん！ 私も入れて？","formal":"初めまして。ゆうかと申します。ご一緒してもよろしいでしょうか。","gap":"びっくりした？ 前の接客の仕事で、敬語は叩き込まれたんだ。","team":"そっちは任せた！ ご注文は私がきちんと確認するね。"},"F09":{"style":"知的で冷静／好きな話題には夢中","entry":"話の途中だった？ 私も聞かせて。","formal":"お話を伺ってもよろしいですか。急がなくて大丈夫です。","gap":"段取りは得意。でも好きな本の話になると止まらなくてさ。","team":"予算は私が確認する。あなたは好みを聞いてみて。"},"F10":{"style":"柔らかな金髪／実は率直","entry":"隣、座ってもいい？ 一緒にお話したいな。","formal":"お好みがあれば、遠慮なくおっしゃってくださいね。","gap":"察してもらうの、やめたんだ。困ったらちゃんと助けてって言う。","team":"一緒なら心強いね。私から好みを聞いてみる。"},"F11":{"style":"上品な雰囲気／仲間には砕けた口調","entry":"美咲です。少しご一緒してもいいですか？","formal":"お時間をいただき、ありがとうございます。どうぞよろしくお願いします。","gap":"ふう、緊張した！ 裏ではこんな感じ。気張りっぱなしは無理だって。","team":"よし、二人でいこ。お客様には私から丁寧に聞くね。"},"F12":{"style":"黒髪ボブのギャル系／きれいな敬語","entry":"お疲れ！ いい感じじゃん。私もいい？","formal":"レイナと申します。本日はご一緒できてうれしいです。","gap":"仲間にはラフだけど、お客様への言葉は大事にしてんの。","team":"任せて。提案は明るく、確認はきっちりいこ。"},"F13":{"style":"眼鏡の元OL／実は冗談好き","entry":"状況を教えてもらえる？ 私も手伝うね。","formal":"差し支えなければ、ご予算とお好みを伺えますか。","gap":"仕事の顔、固い？ 頭の中ではずっと変なダジャレ考えてる。","team":"確認は私がやるね。堅くなりすぎたら助け舟お願い。"},"F14":{"style":"甘い笑顔／芯は負けず嫌い","entry":"私も仲間に入れてほしいな。いい？","formal":"お話を聞かせていただけたら、うれしいです。","gap":"可愛いだけで終わるの、悔しいじゃん。ちゃんと頼れる人になりたい。","team":"今日はあなたを支える番。ちゃんと役に立つから見てて。"},"F15":{"style":"妹系ツインテール／数字に強い","entry":"ゆずも混ぜて？ 何のお話してたの？","formal":"ご注文の前に、お値段をお伝えしてもよろしいですか。","gap":"可愛いだけじゃやってけないよ。予算と注文、ちゃんと見てる。","team":"無理な注文はなし。予算内で楽しめるもの、一緒に選ぼ。"},"F16":{"style":"落ち着いた大人／笑うと豪快","entry":"お疲れさま。ちょっと隣、いいかしら。","formal":"どうぞ肩の力を抜いて。ゆっくりお話ししましょう。","gap":"気取って見える？ 面白いとすぐ大笑いしちゃうのよ。","team":"あなたらしく話して。困ったところは私が拾うから。"},"F17":{"style":"短い金髪でクール／褒められると照れる","entry":"流れは分かった。私も入るね。","formal":"ご希望に合うものをご案内いたします。","gap":"褒められると返し、分かんなくなる。……今のは内緒ね。","team":"確認してから提案しよう。二人なら見落とさない。"},"F18":{"style":"明るい笑顔／静かに寄り添える","entry":"まいも入れて！ いい笑い声が聞こえたよ。","formal":"お疲れのときは、無理にお話しされなくても大丈夫ですよ。","gap":"笑わせるだけが仕事じゃないよ。静かに隣にいる日もある。","team":"あなたの話、私も聞きたい。注文の確認は任せて。"},"F19":{"style":"凛とした黒髪／意外と茶目っ気","entry":"少しご一緒してもよろしいかしら。","formal":"今夜はどんなふうに過ごされたいですか。","gap":"秘密が多そう？ 実は冷蔵庫のプリンを隠すのが一番うまいの。","team":"あなたが話をつないで。私は飲み物のお好みを伺うわ。"},"F20":{"style":"和装の落ち着き／仲間には気さく","entry":"お話の途中に失礼します。私もよろしいですか。","formal":"お好みに合うものを、ご無理のない範囲でお選びくださいね。","gap":"着物だと堅く見えるでしょ。気楽に話していいのよ、ほんと。","team":"大丈夫、二人でやればいいの。あなたのペースでいきましょ。"}};
 const HEROES=[{id:'F01',charm:1,style:'素朴で飾らない',talk:12,energy:2},{id:'F18',charm:2,style:'親しみやすく陽気',talk:10,energy:2},{id:'F13',charm:3,style:'落ち着いて知的',talk:8,energy:1},{id:'F03',charm:4,style:'明るく華やか',talk:5,energy:1},{id:'F10',charm:5,style:'第一印象が華やか',talk:3,energy:0}];
 function start(age=24,heroIndex=rnd(HEROES.length)){
- const h=HEROES[heroIndex];s={day:1,money:0,energy:readStamina().energy,phase:'intro',hero:{...h,name:'あなた',role:'新人キャスト',age},heroIndex,charm:h.charm,talkSkill:h.talk,mem:{},met:{},stories:{},history:{},queue:[],seat:0,castCount:0};intro();
+ const h=HEROES[heroIndex];s={day:1,money:0,energy:readStamina().energy,phase:'intro',hero:{...h,name:'あなた',role:'新人キャスト',age},heroIndex,charm:h.charm,talkSkill:h.talk,mem:{},met:{},stories:{},history:{},queue:[],seat:0,castCount:0,castDeck:[],castBond:{}};intro();
 }
 function intro(){show(s.hero,'主人公',s.hero.age+'歳。今日から夜の世界へ。\nあなたは'+s.hero.style+'タイプ。\n容姿 '+s.charm+'/5・会話力 '+s.talkSkill+'。','PROLOGUE · 初出勤',[
  ['初出勤する ▶',newNight],['年齢を変更する',chooseAge],['容姿タイプを変更する',chooseHero]
@@ -223,13 +224,42 @@ function act(delta,reply,earned=0,extra=0){
  if(delta<0){s.topic=null;if(s.personalBranch!=='listen')s.personalStep=2;}
  show(s.g,'反応',reply,s.mood<18?'CHANGE':'REACTION',[[s.mood<18?'席を交代する ▶':'接客を続ける ▶',talk]],'機嫌 '+Math.round(s.mood)+' ｜ 今回の追加 '+money(amt)+' ｜ この席 '+money(s.table),s.mood<18?'怒り':result<0?'不満':s.mood>=75?'笑顔':'通常');
 }
-function castEvent(){let c=pick(WOMEN.filter(x=>x.id!==s.hero.id&&x.id!=='F01'));s.castCount++;let help=s.energy<35||s.castCount%2===1;
- show(c,'同僚',help?'黒服「'+c.name+'、ヘルプをお願い！」\n'+c.name+'「一緒につかせてもらいますね。」':c.name+'「楽しそう。少しご一緒してもいいですか？」',help?'HELP CALL':'CAST INTERRUPT',[
- ['話題を説明して一緒に接客する',()=>castAct(5,say(0),0)],['ヘルプに任せて休憩する',()=>castAct(-2,'「少し休んでおいで。また話そう。」',5)],['お客様の希望を確認する',()=>castAct(4,say(1),3)],['二人でお客様を取り合う',()=>castAct(-20,say(5),0)]],'同僚：'+c.name+' ｜ '+c.role+' ｜ 休憩するとスタミナ5回復・機嫌2低下。');
+function castEvent(){
+ if(!s.castDeck.length)s.castDeck=shuffle(WOMEN.filter(x=>x.id!==s.hero.id&&x.id!=='F01'));
+ const c=s.castDeck.pop(),v=CAST_VOICES[c.id];s.castCount++;const help=s.energy<35||s.castCount%2===1;
+ show(c,'同僚',c.name+'「'+v.entry+'」',help?'HELP CALL':'CAST INTERRUPT',[
+ ['役割を分けて協力する',()=>castScene(c,'team')],
+ ['丁寧な接客をお願いする',()=>castScene(c,'formal')],
+ ['小声で本音を聞いて息を合わせる',()=>castScene(c,'gap')],
+ ['ヘルプに任せて少し休む',()=>castScene(c,'rest')]
+ ],v.style+' ｜ 協力注文は機嫌55以上・予算内。追加の体力消費なし。');
 }
-function castAct(delta,reply,recover){s.energy=clamp(s.energy+recover,0,100);s.mood=clamp(s.mood+delta,0,100);s.mem[s.g.id]=clamp((s.mem[s.g.id]||0)+Math.round(delta/3),-50,50);show(s.g,'同僚イベントの結果',reply,'CAST RESULT',[['接客を続ける ▶',talk]],'機嫌 '+s.mood+' ｜ 体力 '+s.energy,s.mood<18?'怒り':delta<0?'不満':'通常');}
+function castScene(c,mode){
+ const v=CAST_VOICES[c.id];let text=mode==='rest'?'「'+v.team+'」':mode==='gap'?'あなた「いつもと雰囲気が違うね」\n'+c.name+'（小声）「'+v.gap+'」':c.name+'「'+v[mode]+'」';
+ const good=mode!=='rest';
+ if(good)s.castBond[c.id]=Math.min(3,(s.castBond[c.id]||0)+1);
+ show(c,'同僚との連携',text,mode==='gap'?'CAST · 素顔':mode==='formal'?'CAST · 接客モード':'CAST · 連携',[
+ [good?'二人で好みに合う飲み物を提案する':'お客様の席に戻る',()=>castResolve(c,mode)],
+ [good?'注文は勧めず、会話を支える':'休まず一緒に接客する',()=>castResolve(c,'listen')]
+ ],c.name+'との連携 '+(s.castBond[c.id]||0)+'/3 ｜ '+(good?'協力セット '+money((s.noAlcohol||s.drunk>=2?3000:6000)+((s.castBond[c.id]||0)>=2?3000:0))+'・残り予算 '+money(s.budget):'休憩は体力＋5・機嫌−2。'));
+}
+function castResolve(c,mode){
+ const rest=mode==='rest',listen=mode==='listen',sober=s.noAlcohol||s.drunk>=2;
+ const price=sober?3000:6000;
+ const bonus=(s.castBond[c.id]||0)>=2?3000:0;
+ const amount=price+bonus;
+ let earned=0,reply,delta=rest?-2:listen?4:5;
+ if(rest){s.energy=clamp(s.energy+5,0,100);reply='「おかえり。少し休めた？ 話の続きをしよう。」'}
+ else if(listen)reply='「注文を急かさずに聞いてくれるのは、うれしいね。」';
+ else if(s.mood<55){reply='「飲み物はまだいいかな。まずはゆっくり話したい。」';delta=2}
+ else if(s.budget<amount){reply='「その金額だと予算を超えるから、今ある飲み物で楽しむよ。」';delta=1}
+ else {earned=amount;if(!sober)s.drunk++;s.orderCount++;reply='「二人で選んでくれた'+(sober?'ノンアルコール':'ドリンク')+'、いいね。'+money(amount)+'のセットでお願い。」'}
+ s.budget-=earned;s.money+=earned;s.nightSales+=earned;s.table+=earned;
+ s.mood=clamp(s.mood+delta,0,100);s.mem[s.g.id]=clamp((s.mem[s.g.id]||0)+Math.round(delta/3),-50,50);
+ show(s.g,'連携の結果',reply,'CAST RESULT',[['接客を続ける ▶',talk]],'協力売上 '+money(earned)+' ｜ この席 '+money(s.table)+' ｜ '+(rest?'体力＋5':'追加の体力消費なし'),delta<0?'不満':'通常');
+}
 function leave(text){s.topic=null;show(s.g,'退席',text+'\nセット料金・注文・延長の合計 '+money(s.table),'TABLE RESULT',[['次のお客様へ ▶',()=>{s.seat++;s.orderOffered=false;newCustomer()}]],'今夜は残り '+(2-s.seat)+'組。スタミナは席を移っても引き継ぎ。');}
-$('showcatalog').onclick=()=>{let el=$('catalog');el.classList.toggle('on');$('showcatalog').textContent=el.classList.contains('on')?'人物一覧を閉じる':'40人の人物一覧';if(el.innerHTML)return;for(const [title,people] of [['男性客20人',MEN],['女性キャスト20人',WOMEN]]){let h=document.createElement('h3');h.textContent=title;el.append(h);let grid=document.createElement('div');grid.className='catalog-grid';for(const p of people){let tile=document.createElement('div');tile.className='tile';let img=document.createElement('img');img.src=PHOTOS[p.id];img.alt=p.name;let name=document.createElement('span');name.textContent=p.name;tile.append(img,name);grid.append(tile)}el.append(grid)}};
+$('showcatalog').onclick=()=>{let el=$('catalog');el.classList.toggle('on');$('showcatalog').textContent=el.classList.contains('on')?'人物一覧を閉じる':'40人の人物一覧';if(el.innerHTML)return;for(const [title,people] of [['男性客20人',MEN],['女性キャスト20人',WOMEN]]){let h=document.createElement('h3');h.textContent=title;el.append(h);let grid=document.createElement('div');grid.className='catalog-grid';for(const p of people){let tile=document.createElement('div');tile.className='tile';let img=document.createElement('img');img.src=PHOTOS[p.id];img.alt=p.name;let name=document.createElement('span');name.textContent=p.name;tile.append(img,name);if(CAST_VOICES[p.id]){let detail=document.createElement('small');detail.textContent=CAST_VOICES[p.id].style;detail.style.cssText='display:block;padding:0 6px 8px;font-size:10px;line-height:1.5;color:#e5bed1';tile.append(detail)};grid.append(tile)}el.append(grid)}};
 $('recover-resume').onclick=()=>{syncStamina();if(s.energy<=0)return recoveryStatus();const resume=resumeRecovery;resumeRecovery=null;$('recovery-dialog').close();update();if(resume)resume()};
 setInterval(()=>{if(s){syncStamina();$('energy').textContent=s.energy;recoveryStatus()}},1000);
 $('recover-open').onclick=()=>openRecovery();$('recover-free').onclick=freeRecovery;$('recover-close').onclick=()=>{$('recovery-dialog').close();resumeRecovery=null};
