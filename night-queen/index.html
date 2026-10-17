@@ -264,7 +264,8 @@ function order(kind){
  if(!decision.ok)return act(0,decision.reply,0,0,'neutral');
  s.orderCount++;if(drink.alcohol)s.drunk++;
  const favorite=fit>0?'好みに合うものを選んでくれたんだね。':'それなら飲みたいな。';
- act((bottle?3:2)+(fit?2:0),'「'+favorite+' '+drink.name+'を'+money(drink.price)+'でお願いします。」',drink.price,0);
+ const unit=bottle?'を一本、':drink.name.includes('セット')?'を一つ、':'を一杯、';
+ act((bottle?3:2)+(fit?2:0),'「'+favorite+drink.name+unit+'お願いします。」',drink.price,0);
 }
 function drinkMenu(group){
  if(group!=='soft'&&!alcoholAllowed())group='soft';
