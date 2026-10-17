@@ -19,6 +19,7 @@ main{max-width:1180px;margin:auto;height:100vh;height:100svh;display:flex;flex-d
 @media(min-width:700px) and (max-height:450px){main{gap:4px;padding:5px 10px}.top{position:absolute;left:12px;top:8px}.logo{font-size:13px;letter-spacing:1px}.day{display:none}.stats{margin-left:140px}.stat small{font-size:9px}.stat strong{font-size:14px}.recovery-bar{justify-content:flex-end;gap:12px}.play-stage{grid-template-columns:minmax(0,.65fr) minmax(0,1.35fr)}.dialogue{padding:8px}.line{font-size:14px}.sub{font-size:9px}.choices button{font-size:11px;min-height:40px;padding:5px}.controls .mini{min-height:24px;font-size:10px}}
 /* Keep text reachable at extreme text zoom or unusually short viewports. */
 @media(max-height:520px) and (max-width:699px){main{height:auto;min-height:100svh}.play-stage{grid-template-rows:140px auto}}
+.portrait.birth-mystery img{opacity:0}.portrait.birth-mystery:before{content:'？';position:absolute;inset:0;display:grid;place-items:center;font-size:clamp(80px,12vw,180px);color:#efc98e88;text-shadow:0 0 40px #efc98e55}.portrait.birth-mystery .club{display:none}
 </style></head><body><main><div class="top"><div class="logo">NIGHT QUEEN</div><div class="day" id="day">DAY 1</div></div><div class="stats"><div class="stat"><small>累計売上</small><strong id="money">¥0</strong></div><div class="stat"><small>客の機嫌</small><strong id="moodstat">—</strong></div><div class="stat"><small>体力</small><strong id="energy">100</strong></div></div><div class="recovery-bar"><small id="recovery-count"></small><button class="mini" id="recover-open">スタミナ回復</button></div><section class="play-stage"><section class="portrait"><img id="portrait" alt="キャラクター"><span class="club">CLUB LUNA · TOKYO</span><span class="mood" id="mood">通常</span><div class="nametag" id="name">NIGHT QUEEN</div></section><div class="conversation"><section class="dialogue"><div class="phase" id="phase">PROLOGUE</div><div class="line" id="line"></div><div class="sub" id="sub"></div></section><div class="choices" id="choices"></div></div></section><div class="controls"><button class="mini" id="showcatalog">40人の人物一覧</button><button class="mini" id="reset">最初から</button></div><div class="catalog" id="catalog"></div><div class="endline">人物画像は提供された2枚のキャラクター表から切り出して使用</div></main><dialog id="recovery-dialog" class="recovery-dialog" aria-labelledby="recovery-title"><h2 id="recovery-title">スタミナ回復</h2><p id="recovery-status"></p><p>無料で全回復できるのは1日2回。<br>無料回数は毎日0時（日本時間）にリセットされます。</p><button id="recover-free">無料で全回復</button><p id="recovery-timer" role="status"></p><p>画面を閉じていても1分ごとに＋5回復します。追加の課金回復は未提供です。</p><button id="recover-resume">回復した体力で再開</button><button class="mini" id="recover-close">閉じる</button></dialog><script src="./photos.js?v=98c3301"></script><script>
 
 const MEN=[{"id":"M01","name":"黒田章一","age":52,"role":"建設会社社長","personality":"豪快・義理堅い","budget":280000,"problem":"工事現場で揉めていてさ"},{"id":"M02","name":"鬼塚直樹","age":38,"role":"運送会社経営","personality":"短気・情に厚い","budget":110000,"problem":"部下とぶつかっちまって"},{"id":"M03","name":"神谷蓮","age":32,"role":"IT企業部長","personality":"理屈っぽい・繊細","budget":190000,"problem":"新しい企画が通らなくて"},{"id":"M04","name":"田中昇","age":46,"role":"医療機器営業","personality":"慎重・家庭的","budget":45000,"problem":"仕事と家族の両立が難しくて"},{"id":"M05","name":"藤堂健","age":55,"role":"自営業","personality":"自由奔放・自信家","budget":220000,"problem":"最近は仕事より趣味かな"},{"id":"M06","name":"山本浩二","age":50,"role":"不動産会社社長","personality":"陽気・社交的","budget":210000,"problem":"今日は景気よくいこうか"},{"id":"M07","name":"中村修","age":60,"role":"元企業役員","personality":"保守的・寡黙","budget":90000,"problem":"昔と今じゃ仕事も違うな"},{"id":"M08","name":"松井亮","age":35,"role":"フリーランス","personality":"内向的・趣味人","budget":60000,"problem":"新しいゲームにハマってて"},{"id":"M09","name":"松井稔","age":35,"role":"会社員","personality":"強気・見栄っ張り","budget":75000,"problem":"今日は嫌なことがあって"},{"id":"M10","name":"工藤健太","age":48,"role":"建設作業員","personality":"不器用・義理堅い","budget":35000,"problem":"現場でちょっと疲れたよ"},{"id":"M11","name":"黒田修司","age":52,"role":"建設会社経営","personality":"豪快・頑固","budget":250000,"problem":"昔の現場の話なんだけど"},{"id":"M12","name":"鬼塚","age":38,"role":"飲食店オーナー","personality":"陽気・派手好き","budget":125000,"problem":"新しい店が忙しくて"},{"id":"M13","name":"神谷","age":32,"role":"IT会社員","personality":"知的・慎重","budget":80000,"problem":"転職するか迷ってて"},{"id":"M14","name":"田中","age":46,"role":"医師","personality":"落ち着き・理性的","budget":100000,"problem":"最近、夜勤続きなんだ"},{"id":"M15","name":"藤堂","age":55,"role":"不動産会社社長","personality":"ワイルド・情熱的","budget":190000,"problem":"商売の話をしようか"},{"id":"M16","name":"山本","age":28,"role":"フリーター","personality":"人見知り・夢追い","budget":18000,"problem":"将来のことで迷ってて"},{"id":"M17","name":"中村","age":60,"role":"政治家","personality":"堅実・寡黙","budget":120000,"problem":"人との付き合いは難しいね"},{"id":"M18","name":"松井","age":35,"role":"建設作業員","personality":"気さく・誠実","budget":38000,"problem":"今日は仲間と飲んできた"},{"id":"M19","name":"大樹","age":26,"role":"ホスト","personality":"派手・競争心","budget":85000,"problem":"仕事で勝負があってさ"},{"id":"M20","name":"加藤","age":48,"role":"会社員部長","personality":"温厚・家族思い","budget":42000,"problem":"娘が大きくなってさ"}];
@@ -124,24 +125,56 @@ function renderPortrait(p,emotion){
  }).catch(()=>{expressionSheets.delete(p.id)});
 }
 function show(person,title,dialog,phase,options,sub='',mood='通常',emotion=null){
- const p=person||s.hero;const face=customerExpression(p,phase,mood,emotion);renderPortrait(p,face);
+ const p=person||s.hero;$('portrait').parentElement.classList.toggle('birth-mystery',s.phase==='birth');const face=customerExpression(p,phase,mood,emotion);renderPortrait(p,face);
  $('name').textContent=p.name;let small=document.createElement('small');small.textContent=(p.role||'主人公')+' · '+p.age+'歳';$('name').append(small);
- $('mood').textContent=p.id.startsWith('M')?EXPRESSION_NAMES[face]:mood;$('phase').textContent=phase;$('line').textContent=dialog;$('sub').textContent=sub;$('choices').replaceChildren();
+ $('mood').textContent=p.id.startsWith('M')?EXPRESSION_NAMES[face]:mood;$('phase').textContent=phase;$('line').textContent=dialog;$('sub').textContent=sub+(p.id.startsWith('M')&&s.insights?.[p.id]?.length?' ｜ 客メモ：'+s.insights[p.id].slice(-2).join('・'):'');$('choices').replaceChildren();
  for(const [label,fn] of options){let b=document.createElement('button');b.textContent=label;b.addEventListener('click',()=>{if(!b.isConnected)return;syncStamina();if(s.phase==='play'&&s.energy<=0&&!/^(接客を続ける|席を交代する|次のお客様へ|席につく)/.test(label)){openRecovery(()=>{s.lastChoice=label;fn()});return}s.lastChoice=label;fn()});$('choices').append(b)}update();
 }
-function update(){ $('money').textContent=money(s.money);$('energy').textContent=s.energy;$('day').textContent='DAY '+s.day;$('moodstat').textContent=s.phase==='play'?Math.round(s.mood):'—';saveStamina();recoveryStatus();}
+function update(){ $('money').textContent=money(s.money);$('energy').textContent=s.energy;$('day').textContent=s.phase==='birth'?'人生 '+s.birthStage+'/4':s.phase==='intro'?'デビュー前':'DAY '+s.day;$('moodstat').textContent=s.phase==='play'?Math.round(s.mood):'—';saveStamina();recoveryStatus();}
 const CAST_VOICES={"F01":{"style":"柔らかな笑顔／実は粘り強い","entry":"私もご一緒していいですか？","formal":"初めまして。お好みを伺ってもよろしいですか。","gap":"緊張してる。でも、ここで逃げたくないんだ。","team":"一人で抱えないで。一緒に考えよう。"},"F02":{"style":"黒髪クール／仲間には世話焼き","entry":"隣、いい？ 話の続き、聞かせて。","formal":"お話の途中に失礼します。私もご一緒してよろしいですか。","gap":"平気な顔してるけど、無理してるの分かるよ。水、飲んだ？","team":"私が飲み物を見るから、あなたは話を聞いてあげて。"},"F03":{"style":"華やかなツインテール／礼儀はきっちり","entry":"みゆも混ぜて！ 何のお話？","formal":"初めまして、みゆです。お邪魔でなければご一緒させてください。","gap":"派手って言われるけど、挨拶だけはちゃんとしたいんだ。","team":"盛り上げるのは任せて！ おすすめは一緒に決めよ。"},"F04":{"style":"落ち着いた雰囲気／勝負には熱い","entry":"いい雰囲気ね。少しご一緒してもいい？","formal":"今夜はゆっくり楽しんでいってくださいね。","gap":"勝負どころは譲りたくないの。やるなら二人で勝ちましょ。","team":"焦らずいきましょ。あなたの話を私がつなぐから。"},"F05":{"style":"黒のチョーカー／意外に細やか","entry":"ひなも座っていい？ 何の話してたの？","formal":"お飲み物、同じものでよろしいですか。","gap":"さっきグラスに触ってなかったよね。無理に勧めないでおこ。","team":"私、飲み物の好み聞いてみる。話の続きお願い！"},"F06":{"style":"淡いピンク／優しいけれど断れる","entry":"お疲れさま。私も一緒にいいかな。","formal":"お疲れではありませんか。どうぞご無理なさらず。","gap":"嫌なことは嫌って言っていいんだよ。私もちゃんと断るから。","team":"お客様のペースでいこう。注文は私が確認するね。"},"F07":{"style":"黒いドレス／強気だが礼儀正しい","entry":"手、貸そうか。二人ならもっといけるでしょ。","formal":"失礼いたします。ご希望を伺ってから、ご用意しますね。","gap":"強気と失礼は別。そこは間違えたくないんだ。","team":"あなたが話を広げて。私が注文をまとめる。"},"F08":{"style":"明るい金髪／接客では端正な敬語","entry":"おっ、楽しそうじゃん！ 私も入れて？","formal":"初めまして。ゆうかと申します。ご一緒してもよろしいでしょうか。","gap":"びっくりした？ 前の接客の仕事で、敬語は叩き込まれたんだ。","team":"そっちは任せた！ ご注文は私がきちんと確認するね。"},"F09":{"style":"知的で冷静／好きな話題には夢中","entry":"話の途中だった？ 私も聞かせて。","formal":"お話を伺ってもよろしいですか。急がなくて大丈夫です。","gap":"段取りは得意。でも好きな本の話になると止まらなくてさ。","team":"予算は私が確認する。あなたは好みを聞いてみて。"},"F10":{"style":"柔らかな金髪／実は率直","entry":"隣、座ってもいい？ 一緒にお話したいな。","formal":"お好みがあれば、遠慮なくおっしゃってくださいね。","gap":"察してもらうの、やめたんだ。困ったらちゃんと助けてって言う。","team":"一緒なら心強いね。私から好みを聞いてみる。"},"F11":{"style":"上品な雰囲気／仲間には砕けた口調","entry":"美咲です。少しご一緒してもいいですか？","formal":"お時間をいただき、ありがとうございます。どうぞよろしくお願いします。","gap":"ふう、緊張した！ 裏ではこんな感じ。気張りっぱなしは無理だって。","team":"よし、二人でいこ。お客様には私から丁寧に聞くね。"},"F12":{"style":"黒髪ボブのギャル系／きれいな敬語","entry":"お疲れ！ いい感じじゃん。私もいい？","formal":"レイナと申します。本日はご一緒できてうれしいです。","gap":"仲間にはラフだけど、お客様への言葉は大事にしてんの。","team":"任せて。提案は明るく、確認はきっちりいこ。"},"F13":{"style":"眼鏡の元OL／実は冗談好き","entry":"状況を教えてもらえる？ 私も手伝うね。","formal":"差し支えなければ、ご予算とお好みを伺えますか。","gap":"仕事の顔、固い？ 頭の中ではずっと変なダジャレ考えてる。","team":"確認は私がやるね。堅くなりすぎたら助け舟お願い。"},"F14":{"style":"甘い笑顔／芯は負けず嫌い","entry":"私も仲間に入れてほしいな。いい？","formal":"お話を聞かせていただけたら、うれしいです。","gap":"可愛いだけで終わるの、悔しいじゃん。ちゃんと頼れる人になりたい。","team":"今日はあなたを支える番。ちゃんと役に立つから見てて。"},"F15":{"style":"妹系ツインテール／数字に強い","entry":"ゆずも混ぜて？ 何のお話してたの？","formal":"ご注文の前に、お値段をお伝えしてもよろしいですか。","gap":"可愛いだけじゃやってけないよ。予算と注文、ちゃんと見てる。","team":"無理な注文はなし。予算内で楽しめるもの、一緒に選ぼ。"},"F16":{"style":"落ち着いた大人／笑うと豪快","entry":"お疲れさま。ちょっと隣、いいかしら。","formal":"どうぞ肩の力を抜いて。ゆっくりお話ししましょう。","gap":"気取って見える？ 面白いとすぐ大笑いしちゃうのよ。","team":"あなたらしく話して。困ったところは私が拾うから。"},"F17":{"style":"短い金髪でクール／褒められると照れる","entry":"流れは分かった。私も入るね。","formal":"ご希望に合うものをご案内いたします。","gap":"褒められると返し、分かんなくなる。……今のは内緒ね。","team":"確認してから提案しよう。二人なら見落とさない。"},"F18":{"style":"明るい笑顔／静かに寄り添える","entry":"まいも入れて！ いい笑い声が聞こえたよ。","formal":"お疲れのときは、無理にお話しされなくても大丈夫ですよ。","gap":"笑わせるだけが仕事じゃないよ。静かに隣にいる日もある。","team":"あなたの話、私も聞きたい。注文の確認は任せて。"},"F19":{"style":"凛とした黒髪／意外と茶目っ気","entry":"少しご一緒してもよろしいかしら。","formal":"今夜はどんなふうに過ごされたいですか。","gap":"秘密が多そう？ 実は冷蔵庫のプリンを隠すのが一番うまいの。","team":"あなたが話をつないで。私は飲み物のお好みを伺うわ。"},"F20":{"style":"和装の落ち着き／仲間には気さく","entry":"お話の途中に失礼します。私もよろしいですか。","formal":"お好みに合うものを、ご無理のない範囲でお選びくださいね。","gap":"着物だと堅く見えるでしょ。気楽に話していいのよ、ほんと。","team":"大丈夫、二人でやればいいの。あなたのペースでいきましょ。"}};
-const HEROES=[{id:'F01',charm:1,style:'素朴で飾らない',talk:12,energy:2},{id:'F18',charm:2,style:'親しみやすく陽気',talk:10,energy:2},{id:'F13',charm:3,style:'落ち着いて知的',talk:8,energy:1},{id:'F03',charm:4,style:'明るく華やか',talk:5,energy:1},{id:'F10',charm:5,style:'第一印象が華やか',talk:3,energy:0}];
-function start(age=24,heroIndex=rnd(HEROES.length)){
- const h=HEROES[heroIndex];s={day:1,money:0,energy:readStamina().energy,phase:'intro',hero:{...h,name:'あなた',role:'新人キャスト',age},heroIndex,charm:h.charm,talkSkill:h.talk,mem:{},met:{},stories:{},history:{},queue:[],seat:0,castCount:0,castDeck:[],castBond:{}};intro();
+const HEROES=WOMEN.map((w,i)=>({id:w.id,charm:[2,4,4,4,3,3,4,4,3,5,4,4,3,4,3,3,4,2,4,4][i],style:CAST_VOICES[w.id].style.split('／')[0],talk:[8,6,5,7,6,8,6,5,9,4,7,6,9,5,7,9,6,9,8,9][i],energy:1}));
+const ROOTS=[
+ {place:'海の近くの小さな町',family:'にぎやかな家族',story:'家族の話し声が絶えない家。人の輪に入るのが自然と上手になった。',talk:1},
+ {place:'都会の片隅',family:'働き者の家族',story:'忙しい家族を見て育った。自分で考え、自分の足で立つことを覚えた。',talk:0},
+ {place:'緑の多い地方の街',family:'倹約家の家族',story:'派手な暮らしではなかった。小さな気遣いに気づける子に育った。',talk:1},
+ {place:'商店街のある街',family:'小さな店を営む家族',story:'店先で交わされる挨拶が日常。初対面の人にも物おじしなくなった。',talk:2},
+ {place:'静かな住宅街',family:'穏やかな家族',story:'本を読み、空想する時間が好きだった。言葉をじっくり選ぶ癖がついた。',talk:1}
+];
+const NATURES=[{name:'聞き上手',desc:'相手の話を覚えるのが得意。',talk:2,save:0},{name:'負けず嫌い',desc:'悔しいことがあっても、次を考えられる。',talk:1,save:1},{name:'人懐っこい',desc:'初対面でも、自分から話しかけられる。',talk:2,save:0},{name:'慎重派',desc:'焦るより、様子を見て動く。',talk:1,save:1},{name:'おおらか',desc:'失敗を引きずらず、気持ちを切り替えられる。',talk:1,save:1}];
+function start(age=pick([20,24,28,33,37,42]),heroIndex=rnd(HEROES.length)){
+ const h=HEROES[heroIndex],root=pick(ROOTS),nature=pick(NATURES);
+ s={day:1,money:0,energy:readStamina().energy,phase:'birth',birthStage:1,root,nature,growth:{talk:0,charm:0,save:0},hero:{...h,name:pick(['さくら','つむぎ','しおり','なつき','こはる','すず','ことね','ほのか','あかり','いおり']),role:'新人キャスト',age},heroIndex,charm:h.charm,talkSkill:h.talk,mem:{},met:{},stories:{},history:{},insights:{},queue:[],seat:0,castCount:0,castDeck:[],castBond:{}};
+ birthOpening();
 }
-function intro(){show(s.hero,'主人公',s.hero.age+'歳。今日から夜の世界へ。\nあなたは'+s.hero.style+'タイプ。\n容姿 '+s.charm+'/5・会話力 '+s.talkSkill+'。','PROLOGUE · 初出勤',[
- ['初出勤する ▶',newNight],['年齢を変更する',chooseAge],['容姿タイプを変更する',chooseHero]
- ],'容姿は第一印象に、年齢は客との相性と会話力に影響。年齢が上がると体力消費も少し増える。');}
-function chooseAge(){show(s.hero,'年齢を選ぶ','何歳から夜の世界に挑戦する？','CHARACTER AGE',[20,28,37,42].map(age=>[age+'歳で始める',()=>start(age,s.heroIndex)]),'年齢だけで不利とは限らない。大人の落ち着きを好む客もいる。');}
-function chooseHero(){show(s.hero,'容姿を選ぶ','どのタイプで挑戦する？','CHARACTER STYLE',HEROES.map((h,i)=>['容姿 '+h.charm+'/5 · '+h.style,()=>start(s.hero.age,i)]),'第一印象と会話力には、それぞれ得意・不得意がある。');}
+function hiddenSelf(age){return {...s.hero,name:'まだ見ぬあなた',role:'人生のはじまり',age}}
+function birthOpening(){s.phase='birth';s.birthStage=1;show(hiddenSelf(0),'誕生','ある日、'+s.root.place+'に、一人の女の子が生まれた。\n'+s.root.family+'に迎えられた、小さな命。','BIRTH · 誕生',[['この子の人生を見てみる ▶',childhood]],'どんな顔で、どんな大人になるのか。まだ誰も知らない。');}
+function childhood(){s.birthStage=2;show(hiddenSelf(10),'子ども時代',s.root.story+'\n放課後、いちばん夢中になったのは？','BIRTH · 子ども時代',[
+ ['友達と話して遊ぶ',()=>grow('talk',2,'人と過ごす時間が、会話の引き出しになった。')],['おしゃれや髪型を研究する',()=>grow('charm',1,'自分に似合うものを探す楽しさを覚えた。')],['スポーツで体を動かす',()=>grow('save',1,'毎日の積み重ねが、粘り強さになった。')],['本や物語の世界に浸る',()=>grow('talk',2,'いろいろな人の気持ちを想像するようになった。')]],'選んだ経験は、大人になったときの強みにつながる。');}
+function grow(stat,value,memory){s.growth[stat]+=value;s.childMemory=memory;s.birthStage=3;show(hiddenSelf(18),'成長',memory+'\nやがて、人と接するアルバイトを始めた。どう働く？','BIRTH · 得意なこと',[
+ ['常連さんの話を覚える',()=>finishGrowth('talk',2,'話を覚えてくれる子、と頼りにされた。')],['身だしなみと所作を磨く',()=>finishGrowth('charm',1,'雰囲気が変わったね、と声をかけられた。')],['忙しい時間の段取りを覚える',()=>finishGrowth('save',1,'忙しくてもペースを崩さない働き方を覚えた。')],['苦手な人にも話しかけてみる',()=>finishGrowth('talk',2,'最初は緊張しても、会話をつなげるようになった。')]],'生まれつきだけで、人生は決まらない。');}
+function finishGrowth(stat,value,memory){s.growth[stat]+=value;s.workMemory=memory;const h=HEROES[s.heroIndex];s.charm=clamp(h.charm+s.growth.charm,1,5);s.talkSkill=h.talk+s.root.talk+s.nature.talk+s.growth.talk;s.hero.staminaSave=Math.min(2,s.nature.save+s.growth.save);intro();}
+function intro(){s.phase='intro';s.birthStage=4;show(s.hero,'あなたの人生',s.hero.name+'、'+s.hero.age+'歳。\n'+s.hero.style+'雰囲気。性格は'+s.nature.name+'。\n'+s.workMemory+'\nそして今、CLUB LUNAの扉を開く。','BIRTH · 主人公誕生',[
+ ['この主人公で夜の世界へ ▶',newNight],['別の人生をもう一度たどる',()=>start()],['デビューする年齢を選ぶ',chooseAge]
+ ],'容姿 '+s.charm+'/5 ｜ 会話力 '+s.talkSkill+' ｜ 体力消費 −'+s.hero.staminaSave+' ｜ 育ち：'+s.root.family);}
+function chooseAge(){show(s.hero,'年齢を選ぶ','この人生で、何歳から挑戦する？','CHARACTER AGE',[20,28,37,42].map(age=>[age+'歳でデビュー',()=>{s.hero.age=age;intro()}]),'生まれ育ち・性格・経験はそのまま。年齢で客との相性が変わる。');}
 // A shuffled deck avoids repeatedly excluding the same customers.
 function newNight(){syncStamina();if(s.energy<=0)return staminaPause(newNight);s.phase='play';s.seat=0;s.lineup=[];while(s.lineup.length<3){if(!s.queue.length)s.queue=shuffle(MEN);let i=s.queue.findIndex(g=>!s.lineup.includes(g));if(i<0){s.queue=shuffle(MEN);continue}s.lineup.push(s.queue.splice(i,1)[0])}s.nightSales=0;newCustomer();}
+const GUEST_TRAITS={"M01":{"temper":1.2,"warmth":1,"limit":100000,"minimum":40,"bottle":72,"wallet":"豪快に使う","moneyLine":"気に入った席なら、細けえ金の話はしたくねえな。"},"M02":{"temper":1.6,"warmth":1,"limit":35000,"minimum":58,"bottle":88,"wallet":"情には動くが押し売り嫌い","moneyLine":"筋が通ってりゃ払うよ。押しつけられるのは嫌いだけどな。"},"M03":{"temper":1.15,"warmth":0,"limit":35000,"minimum":60,"bottle":86,"wallet":"納得できる物に使う","moneyLine":"値段より、何に払うかをちゃんと考えたいんです。"},"M04":{"temper":0.65,"warmth":2,"limit":5000,"minimum":65,"bottle":98,"wallet":"家計を優先する","moneyLine":"楽しくお話ししたいです。ただ、家の出費もあるので注文は控えめに。"},"M05":{"temper":1.1,"warmth":1,"limit":50000,"minimum":48,"bottle":78,"wallet":"趣味と好みに投資する","moneyLine":"好きなものには払うよ。興味がなければ、安くても要らないね。"},"M06":{"temper":0.75,"warmth":3,"limit":100000,"minimum":40,"bottle":70,"wallet":"祝い事には大盤振る舞い","moneyLine":"いいことがあった日は、みんなで楽しむために使いたいんだよ！"},"M07":{"temper":1.05,"warmth":0,"limit":12000,"minimum":62,"bottle":95,"wallet":"昔なじみにだけ財布を開く","moneyLine":"慣れない注文は控えたいね。付き合いを大事にしたいんだ。"},"M08":{"temper":0.65,"warmth":1,"limit":6000,"minimum":60,"bottle":95,"wallet":"趣味の予算は別に残す","moneyLine":"好きなゲームにも使いたいから、ここでは少しずつかな。"},"M09":{"temper":1.4,"warmth":0,"limit":35000,"minimum":54,"bottle":80,"wallet":"見栄を張るが限度はある","moneyLine":"安く見られたくはないよ。でも、何でも払えるわけじゃないからね。"},"M10":{"temper":0.8,"warmth":1,"limit":6000,"minimum":50,"bottle":95,"wallet":"一杯をゆっくり楽しむ","moneyLine":"何杯も頼むより、一杯飲みながら話せりゃ十分だよ。"},"M11":{"temper":1.4,"warmth":0,"limit":70000,"minimum":48,"bottle":76,"wallet":"義理と顔を立てる時に使う","moneyLine":"世話になった相手には出す。雑に扱われてまで金は出さねえぞ。"},"M12":{"temper":0.9,"warmth":3,"limit":70000,"minimum":44,"bottle":74,"wallet":"場を盛り上げるために使う","moneyLine":"みんなで楽しくなる注文ならいいね！ 一人で飲むより好きだな。"},"M13":{"temper":0.8,"warmth":0,"limit":12000,"minimum":65,"bottle":94,"wallet":"計画してから使う","moneyLine":"予算は決めています。その中で、納得して楽しみたいです。"},"M14":{"temper":0.65,"warmth":1,"limit":35000,"minimum":56,"bottle":88,"wallet":"落ち着ける時間に払う","moneyLine":"にぎやかな注文より、ゆっくり話せる時間を大切にしたいね。"},"M15":{"temper":1.25,"warmth":1,"limit":70000,"minimum":48,"bottle":76,"wallet":"気に入れば一気に使う","moneyLine":"気が合えば惜しまねえよ。ただ、調子よく勧めるだけじゃだめだ。"},"M16":{"temper":0.6,"warmth":1,"limit":3000,"minimum":62,"bottle":100,"wallet":"少ない予算を守る","moneyLine":"今は余裕がなくて。飲み物は安いものでもいいかな。"},"M17":{"temper":1.1,"warmth":0,"limit":12000,"minimum":66,"bottle":96,"wallet":"使い道を慎重に決める","moneyLine":"お付き合いは大切ですが、注文は自分で考えて決めます。"},"M18":{"temper":0.7,"warmth":2,"limit":6000,"minimum":48,"bottle":94,"wallet":"仲間との一杯を大事にする","moneyLine":"気楽に飲めればそれでいいよ。無理して張り合うのは性に合わないな。"},"M19":{"temper":1.45,"warmth":0,"limit":50000,"minimum":52,"bottle":78,"wallet":"勝負どころで見栄を張る","moneyLine":"勝負のときは使うよ。でも、こっちのペースも大事にしてほしいな。"},"M20":{"temper":0.5,"warmth":3,"limit":6000,"minimum":68,"bottle":100,"wallet":"優しいけれど財布は固い","moneyLine":"話すのは楽しいですよ。でも家族のためにも、追加の注文は慎重にね。"}};
+function guestTraits(g=s.g){return GUEST_TRAITS[g.id]}
+function discoverGuest(kind){const p=guestTraits(),text=kind==='temper'?(p.temper>=1.25?'怒りやすい':p.temper<=.75?'穏やかな応対':'扱われ方をよく見ている'):p.wallet;const notes=s.insights[s.g.id]||(s.insights[s.g.id]=[]);if(!notes.includes(text))notes.push(text)}
+function purchaseDecision(amount,kind){
+ const p=guestTraits();
+ if(amount>s.budget)return {ok:false,reply:'「今日は残りの予算を超えてしまうから、やめておくよ。」'};
+ if(amount>p.limit)return {ok:false,reply:p.limit<=6000?'「話すのは楽しいけれど、その注文は控えたいな。今日は少しずつでお願いします。」':'「予算が残っていても、その注文には慎重でいたいんだ。」'};
+ const required=kind==='bottle'?p.bottle:kind==='extend'?Math.min(95,p.minimum+8):kind==='soft'?Math.max(35,p.minimum-10):p.minimum;
+ if(s.mood<required)return {ok:false,reply:kind==='bottle'?'「高い注文は、もっと信頼できてからにしたいな。」':'「まずはゆっくり話したいな。注文はもう少し後で。」'};
+ return {ok:true};
+}
+function askMoneyStyle(){s.personalStep=2;s.personalBranch='change';discoverGuest('wallet');show(s.g,'お金の使い方','「'+guestTraits().moneyLine+'」','GUEST · 金銭感覚',[
+ ['無理なく楽しめるように気を配る',()=>act(7,'「それなら、気楽に過ごせそうだね。」',0,0)],
+ ['大切にしている使い道を聞く',()=>act(8,say(4),0,0)],
+ ['注文を勧めず会話を続ける',()=>act(5,say(2),0,0)],
+ ['お金を使わないとつまらないと言う',()=>act(-18,say(5),0,0)]],'優しい応対と、注文の受けやすさは別。相手の考え方を聞いてみよう。');}
 const PREFERRED_AGE=[34,29,32,36,38,28,40,30,24,36,39,27,33,38,35,25,40,32,24,37];
 function ageAffinity(g){return clamp(6-Math.floor(Math.abs(s.hero.age-PREFERRED_AGE[Number(g.id.slice(1))-1])*0.8),-10,6)}
 function newCustomer(){
@@ -150,7 +183,7 @@ function newCustomer(){
  s.g=s.lineup[s.seat];s.turn=0;s.castThisSeat=false;s.humorUsed=false;s.chanceUsed=false;s.extended=false;s.orderCount=0;s.orderOffered=false;s.topic=null;s.personalStep=0;s.personalBranch=null;s.careCount=0;s.noAlcohol=false;s.table=0;s.usedTopics=[];s.troubleUsed=false;s.momentum=0;
  s.situation=pick(['一軒目・素面','二軒目・ほろ酔い','三軒目・酔っている','仕事帰り・疲労','祝いの席・上機嫌','嫌なことがあった夜']);
  s.drunk=s.situation.includes('三軒目')?pick([3,4]):s.situation.includes('二軒目')?1:0;
- s.mood=clamp(43+rnd(13)+(s.charm-3)*5+ageAffinity(s.g)+(s.mem[s.g.id]||0)*.18,18,82);
+ s.mood=clamp(43+rnd(13)+(s.charm-3)*5+ageAffinity(s.g)+(s.mem[s.g.id]||0)*.18+guestTraits().warmth*2,18,82);
  s.stay=5+rnd(2);s.budget=Math.round(s.g.budget*pick([.45,.7,1,1.2]));s.cover=s.g.id==='M16'?3500:6000;s.budget-=s.cover;s.money+=s.cover;s.nightSales+=s.cover;s.table=s.cover;
  s.first=!s.met[s.g.id];s.met[s.g.id]=true;
  show(s.g,'来店','「'+voice(s.g,s.first?'first':'again')+'」','TABLE '+(s.seat+1)+'/3 · '+s.situation,[['席につく ▶',talk]],'セット料金 '+money(s.cover)+' ｜ あなたとの年齢相性 '+(ageAffinity(s.g)>=0?'+':'')+ageAffinity(s.g));
@@ -194,7 +227,7 @@ function personalTalk(){let id=s.g.id,story=PERSON_SCENES[id],f=FOLLOW[id];
  if(s.personalStep===0){s.personalStep=1;const prior=s.stories[id];let line=prior?'この前の話の続きなんだけど。'+f[0]:story[0];s.stories[id]=true;
  return show(s.g,'お客様の話','「'+line+'」','PERSONAL TALK',[
  [prior?'その後の様子を丁寧に聞く':story[1],()=>{s.personalBranch='listen';act(10,prior?say(4):story[2],0,0,prior?'joy':'neutral')}],
- ['今の気持ちを丁寧に聞く',()=>{s.personalBranch='listen';act(8,say(4),0,0)}],
+ ['お金の使い方をさりげなく聞く',askMoneyStyle],
  ['今は気分転換したいか確認する',()=>{s.personalBranch='change';s.personalStep=2;act(4,say(6),0,0)}],
  ['話を遮って注文を迫る',()=>{s.personalBranch='blocked';s.personalStep=2;act(-18,say(5),0,0)}]],'お客様の話に、どう応える？');}
  if(s.personalStep===1&&s.personalBranch==='listen'){s.personalStep=2;return show(s.g,'話の続き','「'+f[0]+'」','PERSONAL FOLLOW UP',[
@@ -211,16 +244,19 @@ function freeTalk(){let history=s.history[s.g.id]||[],available=TOPICS.filter(t=
 function followTalk(){let t=s.topic;s.topic=null;show(s.g,'会話の続き',t==='goal'?'「その目標に向けて、今は何をしているの？」':'「休みが一日増えたら、何をしたい？」','FOLLOW UP',[
  [t==='goal'?'今取り組んでいることを話す':'行ってみたい場所を話す',()=>act(8,t==='goal'?'「少しずつ進んでるんだね。」':'「その場所、楽しそうだね。」',0,0)],
  ['相手の考えも尋ねる',()=>act(6,say(2),0,0)],['まだ考え中と正直に答える',()=>act(3,'「焦らず考えてみるといいね。」',0,0)],['聞こえないふりをする',()=>act(-12,say(5),0,0)]],'さっきの答えから続く会話。');}
-function order(kind){let amount=kind==='extend'?12000:kind==='bottle'?35000:5000;
- if(kind!=='extend'&&(s.noAlcohol||s.drunk>=2))return act(2,'「お酒はやめて、ノンアルコールにしようかな。」',Math.min(1500,s.budget),0);
- if(s.budget<amount)return act(-3,'「それだと予算を超えるから、今回はやめておくよ。」',0,0);
- if(kind==='bottle'&&s.mood<82)return act(-8,'「ボトルは、もう少しお互いを知ってからにしよう。」',0,0);
+function order(kind){
+ if(kind==='extend'&&s.extended)return act(0,'「延長はもうお願いしてあるよ。」',0,0,'neutral');
+ if(kind!=='extend'&&(s.noAlcohol||s.drunk>=2))kind='soft';
+ const amount=kind==='extend'?12000:kind==='bottle'?35000:kind==='soft'?1500:5000;
+ const decision=purchaseDecision(amount,kind);discoverGuest('wallet');
+ if(!decision.ok)return act(0,decision.reply,0,0,'neutral');
  if(kind==='extend'){s.extended=true;return act(2,'「もう少し話そう。延長をお願いします。」',amount,2)}
- s.orderCount++;s.drunk++;act(kind==='bottle'?3:2,kind==='bottle'?'「好みを覚えてくれたんだね。それなら一本お願いしよう。」':'「それを一杯、お願いします。」',amount,0);
+ s.orderCount++;if(kind!=='soft')s.drunk++;
+ act(kind==='bottle'?3:2,kind==='bottle'?'「好みも気持ちも分かってくれたんだね。それなら一本お願いしよう。」':kind==='soft'?'「ノンアルコールなら、一杯お願いします。」':'「それを一杯、お願いします。」',amount,0);
 }
 function offerOrder(chance=false){s.chanceUsed=chance||s.chanceUsed;let sober=!s.noAlcohol&&s.drunk<2;
  let options=[
- [sober?'ドリンクを提案する ¥5,000':'ノンアルコールを提案する ¥1,500',()=>sober?order('drink'):act(3,'「それなら飲みたいな。お願いします。」',Math.min(1500,s.budget),0)],
+ [sober?'ドリンクを提案する ¥5,000':'ノンアルコールを提案する ¥1,500',()=>sober?order('drink'):order('soft')],
  [sober?'好みを聞いてボトルを提案する ¥35,000':'飲み物を増やさず会話を続ける',()=>sober?order('bottle'):act(4,say(2),0,0)],
  [!s.extended?'延長を提案する ¥12,000':'今回は見送る',()=>!s.extended?order('extend'):leave('「'+voice(s.g,'bye')+'」')],
  ['予算を無視して注文を迫る',()=>act(-24,say(5),0,0)]];
@@ -248,9 +284,10 @@ function talk(){
  freeTalk();
 }
 function act(delta,reply,earned=0,extra=0,emotion=null){
- s.turn++;s.energy=clamp(s.energy-(4+rnd(2)+(s.hero.age>=37?1:0)-(s.hero.energy===2?1:0)),0,100);
- const social=delta>0?Math.round((s.talkSkill+(s.hero.age>=37?3:0))*.16):0;
- const result=delta>0?Math.max(1,Math.round(delta*(s.mood>=85?.35:s.mood>=70?.65:1))+social):delta;
+ s.turn++;s.energy=clamp(s.energy-(4+rnd(2)+(s.hero.age>=37?1:0)-(s.hero.staminaSave||0)),0,100);
+ const personality=guestTraits();if(delta<0)discoverGuest('temper');
+ const social=delta>0?Math.round((s.talkSkill+(s.hero.age>=37?3:0))*.16)+Math.floor(personality.warmth/2):0;
+ const result=delta>0?Math.max(1,Math.round(delta*(s.mood>=85?.35:s.mood>=70?.65:1))+social):delta<0?Math.round(delta*personality.temper):0;
  s.momentum=clamp(s.momentum+(result>0?1:-2),0,5);s.mood=clamp(s.mood+result,0,100);s.mem[s.g.id]=clamp((s.mem[s.g.id]||0)+Math.round(result/3),-50,50);
  const amt=clamp(earned,0,s.budget);s.budget-=amt;s.money+=amt;s.nightSales+=amt;s.table+=amt;s.stay=clamp(s.stay+extra,0,8);
  if(delta<0){s.topic=null;if(s.personalBranch!=='listen')s.personalStep=2;}
@@ -264,7 +301,7 @@ function castEvent(){
  ['丁寧な接客をお願いする',()=>castScene(c,'formal')],
  ['小声で本音を聞いて息を合わせる',()=>castScene(c,'gap')],
  ['ヘルプに任せて少し休む',()=>castScene(c,'rest')]
- ],v.style+' ｜ 協力注文は機嫌55以上・予算内。追加の体力消費なし。');
+ ],v.style+' ｜ 協力注文も相手の金銭感覚と予算次第。追加の体力消費なし。');
 }
 function castScene(c,mode){
  const v=CAST_VOICES[c.id];let text=mode==='rest'?'「'+v.team+'」':mode==='gap'?'あなた「いつもと雰囲気が違うね」\n'+c.name+'（小声）「'+v.gap+'」':c.name+'「'+v[mode]+'」';
@@ -283,9 +320,8 @@ function castResolve(c,mode){
  let earned=0,reply,delta=rest?-2:listen?4:5;
  if(rest){s.energy=clamp(s.energy+5,0,100);reply='「おかえり。少し休めた？ 話の続きをしよう。」'}
  else if(listen)reply='「注文を急かさずに聞いてくれるのは、うれしいね。」';
- else if(s.mood<55){reply='「飲み物はまだいいかな。まずはゆっくり話したい。」';delta=2}
- else if(s.budget<amount){reply='「その金額だと予算を超えるから、今ある飲み物で楽しむよ。」';delta=1}
- else {earned=amount;if(!sober)s.drunk++;s.orderCount++;reply='「二人で選んでくれた'+(sober?'ノンアルコール':'ドリンク')+'、いいね。'+money(amount)+'のセットでお願い。」'}
+ else if(!purchaseDecision(amount,sober?'soft':'team').ok){discoverGuest('wallet');reply=purchaseDecision(amount,sober?'soft':'team').reply;delta=0}
+ else {discoverGuest('wallet');earned=amount;if(!sober)s.drunk++;s.orderCount++;reply='「二人で選んでくれた'+(sober?'ノンアルコール':'ドリンク')+'、いいね。'+money(amount)+'のセットでお願い。」'}
  s.budget-=earned;s.money+=earned;s.nightSales+=earned;s.table+=earned;
  s.mood=clamp(s.mood+delta,0,100);s.mem[s.g.id]=clamp((s.mem[s.g.id]||0)+Math.round(delta/3),-50,50);
  show(s.g,'連携の結果',reply,'CAST RESULT',[['接客を続ける ▶',talk]],'協力売上 '+money(earned)+' ｜ この席 '+money(s.table)+' ｜ '+(rest?'体力＋5':'追加の体力消費なし'),delta<0?'不満':'通常',delta<0?'anger':earned>0?'joy':null);
