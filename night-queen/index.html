@@ -153,7 +153,7 @@ function childhood(){s.birthStage=2;show(hiddenSelf(10),'子ども時代',s.root
 function grow(stat,value,memory){s.growth[stat]+=value;s.childMemory=memory;s.birthStage=3;show(hiddenSelf(18),'成長',memory+'\nやがて、人と接するアルバイトを始めた。どう働く？','BIRTH · 得意なこと',[
  ['常連さんの話を覚える',()=>finishGrowth('talk',2,'話を覚えてくれる子、と頼りにされた。')],['身だしなみと所作を磨く',()=>finishGrowth('charm',1,'雰囲気が変わったね、と声をかけられた。')],['忙しい時間の段取りを覚える',()=>finishGrowth('save',1,'忙しくてもペースを崩さない働き方を覚えた。')],['苦手な人にも話しかけてみる',()=>finishGrowth('talk',2,'最初は緊張しても、会話をつなげるようになった。')]],'生まれつきだけで、人生は決まらない。');}
 function finishGrowth(stat,value,memory){s.growth[stat]+=value;s.workMemory=memory;const h=HEROES[s.heroIndex];s.charm=clamp(h.charm+s.growth.charm,1,5);s.talkSkill=h.talk+s.root.talk+s.nature.talk+s.growth.talk;s.hero.staminaSave=Math.min(2,s.nature.save+s.growth.save);intro();}
-function intro(){s.phase='intro';s.birthStage=4;show(s.hero,'あなたの人生',s.hero.name+'、'+s.hero.age+'歳。\n'+s.hero.style+'雰囲気。性格は'+s.nature.name+'。\n'+s.workMemory+'\nそして今、CLUB LUNAの扉を開く。','BIRTH · 主人公誕生',[
+function intro(){s.phase='intro';s.birthStage=4;show(s.hero,'あなたの人生',s.hero.name+'、'+s.hero.age+'歳。\n'+'見た目は「'+s.hero.style+'」。性格は'+s.nature.name+'。\n'+s.workMemory+'\nそして今、CLUB LUNAの扉を開く。','BIRTH · 主人公誕生',[
  ['この主人公で夜の世界へ ▶',newNight],['別の人生をもう一度たどる',()=>start()],['デビューする年齢を選ぶ',chooseAge]
  ],'容姿 '+s.charm+'/5 ｜ 会話力 '+s.talkSkill+' ｜ 体力消費 −'+s.hero.staminaSave+' ｜ 育ち：'+s.root.family);}
 function chooseAge(){show(s.hero,'年齢を選ぶ','この人生で、何歳から挑戦する？','CHARACTER AGE',[20,28,37,42].map(age=>[age+'歳でデビュー',()=>{s.hero.age=age;intro()}]),'生まれ育ち・性格・経験はそのまま。年齢で客との相性が変わる。');}
