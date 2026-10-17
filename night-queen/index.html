@@ -93,10 +93,40 @@ const TONES={
  lively:['話しやすいね！','丁寧にありがと！','じゃあ、いろいろ話そうよ。','いきなり注文？ まだ早いよ。','聞いてくれてありがと！','今はその話じゃないって。','いいね、楽しくいこう！']};
 const GUEST_TONE={M01:'rough',M02:'rough',M03:'polite',M04:'polite',M05:'calm',M06:'lively',M07:'polite',M08:'shy',M09:'calm',M10:'calm',M11:'rough',M12:'lively',M13:'polite',M14:'calm',M15:'rough',M16:'shy',M17:'polite',M18:'calm',M19:'lively',M20:'polite'};
 const say=(key,g=s.g)=>'「'+TONES[GUEST_TONE[g.id]][key]+'」';
-function show(person,title,dialog,phase,options,sub='',mood='通常'){
- const p=person||s.hero; $('portrait').src=PHOTOS[p.id];$('portrait').alt=p.name;
+const EXPRESSION_NAMES={neutral:'通常',joy:'喜び',anger:'怒り',sadness:'悲しみ',laughter:'大笑い'};
+const EXPRESSION_CELLS={joy:[0,0],anger:[1,0],sadness:[0,1],laughter:[1,1]};
+const WORRIED_GUESTS=new Set(['M01','M02','M03','M04','M09','M10','M12','M13','M16','M17','M18','M20']);
+const expressionSheets=new Map(),expressionFaces=new Map();let portraitRequest=0;
+function customerExpression(p,phase,mood,explicit){
+ if(!p.id.startsWith('M'))return 'neutral';
+ if(EXPRESSION_NAMES[explicit])return explicit;
+ if(phase==='CHANGE'||phase==='TROUBLE'||mood==='怒り'||mood==='不満')return 'anger';
+ if(phase.startsWith('PERSONAL')&&WORRIED_GUESTS.has(p.id))return 'sadness';
+ if(mood==='笑顔'||phase==='CHANCE TIME')return 'joy';
+ if(phase.startsWith('TABLE ')&&s.situation?.includes('祝い'))return 'joy';
+ return 'neutral';
+}
+function renderPortrait(p,emotion){
+ const img=$('portrait'),request=++portraitRequest;
+ img.src=PHOTOS[p.id];img.alt=p.name+'（通常）';img.dataset.expression='neutral';
+ if(!p.id.startsWith('M')||!EXPRESSION_CELLS[emotion])return;
+ const key=p.id+':'+emotion;
+ const apply=src=>{if(request!==portraitRequest)return;img.src=src;img.alt=p.name+'（'+EXPRESSION_NAMES[emotion]+'）';img.dataset.expression=emotion};
+ if(expressionFaces.has(key)){apply(expressionFaces.get(key));return}
+ if(!expressionSheets.has(p.id)){
+  const pending=new Promise((resolve,reject)=>{const sheet=new Image();sheet.onload=()=>resolve(sheet);sheet.onerror=()=>reject(new Error('Expression image unavailable'));sheet.src='./expressions/'+p.id+'.webp?v=1'});
+  expressionSheets.set(p.id,pending);if(expressionSheets.size>3)expressionSheets.delete(expressionSheets.keys().next().value);
+ }
+ expressionSheets.get(p.id).then(sheet=>{
+  const [x,y]=EXPRESSION_CELLS[emotion],w=sheet.naturalWidth/2,h=sheet.naturalHeight/2,canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;
+  const ctx=canvas.getContext('2d');if(!ctx)return;ctx.drawImage(sheet,x*w,y*h,w,h,0,0,w,h);
+  const src=canvas.toDataURL('image/webp',.9);expressionFaces.set(key,src);if(expressionFaces.size>12)expressionFaces.delete(expressionFaces.keys().next().value);apply(src);
+ }).catch(()=>{expressionSheets.delete(p.id)});
+}
+function show(person,title,dialog,phase,options,sub='',mood='通常',emotion=null){
+ const p=person||s.hero;const face=customerExpression(p,phase,mood,emotion);renderPortrait(p,face);
  $('name').textContent=p.name;let small=document.createElement('small');small.textContent=(p.role||'主人公')+' · '+p.age+'歳';$('name').append(small);
- $('mood').textContent=mood;$('phase').textContent=phase;$('line').textContent=dialog;$('sub').textContent=sub;$('choices').replaceChildren();
+ $('mood').textContent=p.id.startsWith('M')?EXPRESSION_NAMES[face]:mood;$('phase').textContent=phase;$('line').textContent=dialog;$('sub').textContent=sub;$('choices').replaceChildren();
  for(const [label,fn] of options){let b=document.createElement('button');b.textContent=label;b.addEventListener('click',()=>{if(!b.isConnected)return;syncStamina();if(s.phase==='play'&&s.energy<=0&&!/^(接客を続ける|席を交代する|次のお客様へ|席につく)/.test(label)){openRecovery(()=>{s.lastChoice=label;fn()});return}s.lastChoice=label;fn()});$('choices').append(b)}update();
 }
 function update(){ $('money').textContent=money(s.money);$('energy').textContent=s.energy;$('day').textContent='DAY '+s.day;$('moodstat').textContent=s.phase==='play'?Math.round(s.mood):'—';saveStamina();recoveryStatus();}
@@ -117,7 +147,7 @@ function ageAffinity(g){return clamp(6-Math.floor(Math.abs(s.hero.age-PREFERRED_
 function newCustomer(){
  if(s.seat>=3){s.phase='result';return show(s.hero,'あなた','今日の営業が終わった。\n今夜の売上 '+money(s.nightSales)+'\n累計 '+money(s.money),'NIGHT RESULT', [['翌日の営業へ ▶',()=>{s.day++;newNight()}]],'スタミナは翌日も引き継ぎ。回復ボタンから1日2回まで無料で全回復。')}
  syncStamina();if(s.energy<=0)return staminaPause(newCustomer);s.phase='play';
- s.g=s.lineup[s.seat];s.turn=0;s.castThisSeat=false;s.chanceUsed=false;s.extended=false;s.orderCount=0;s.orderOffered=false;s.topic=null;s.personalStep=0;s.personalBranch=null;s.careCount=0;s.noAlcohol=false;s.table=0;s.usedTopics=[];s.troubleUsed=false;s.momentum=0;
+ s.g=s.lineup[s.seat];s.turn=0;s.castThisSeat=false;s.humorUsed=false;s.chanceUsed=false;s.extended=false;s.orderCount=0;s.orderOffered=false;s.topic=null;s.personalStep=0;s.personalBranch=null;s.careCount=0;s.noAlcohol=false;s.table=0;s.usedTopics=[];s.troubleUsed=false;s.momentum=0;
  s.situation=pick(['一軒目・素面','二軒目・ほろ酔い','三軒目・酔っている','仕事帰り・疲労','祝いの席・上機嫌','嫌なことがあった夜']);
  s.drunk=s.situation.includes('三軒目')?pick([3,4]):s.situation.includes('二軒目')?1:0;
  s.mood=clamp(43+rnd(13)+(s.charm-3)*5+ageAffinity(s.g)+(s.mem[s.g.id]||0)*.18,18,82);
@@ -174,10 +204,10 @@ const TOPICS=[
  {id:'holiday',q:'休日はどんなふうに過ごしてる？',a:[['趣味を話して相手にも尋ねる',7,'なるほど。休みの過ごし方って人それぞれだね。'],['相手の趣味を詳しく聞く',8,'自分の好きなことを聞いてもらえるとうれしいね。'],['家でのんびりしたいと答える',4,'休む時間も大切だね。'],['面倒そうに話を流す',-13,'聞いてみたかったんだけどな。']]},
  {id:'impression',q:'ここまで話して、どんな印象だった？',a:[['会話から感じた長所を具体的に話す',8,'ちゃんと見てくれてるんだね。'],['まだ知りたいことがあると返す',6,'じゃあ、もう少し話そうか。'],['少し照れながら答える',3,'急に聞いたら答えにくいかな。'],['他のお客様と比べる',-17,'他の人と比べられるのは嫌だな。']]},
  {id:'goal',q:'この仕事で、これからやってみたいことは？',a:[['自分の夢と目標を話す',8,'目標があるんだね。応援したいよ。'],['今は勉強中だと話す',6,'少しずつ覚えていけばいいよ。'],['相手の目標も尋ねる',5,'自分の目標も、改めて考えてみたくなるね。'],['お金の話だけする',-12,'それだけだと、ちょっと寂しいな。']]},
- {id:'comfort',q:'今日はここで少し息抜きできるといいな。',a:[['落ち着いて話せるよう気を配る',8,'こういう時間が欲しかったんだ。'],['好きな音楽について尋ねる',6,'音楽の話もいいね。'],['軽い冗談で和ませる',4,'少し気が緩んだよ。'],['忙しいからと急かす',-16,'せかされると落ち着かないよ。']]}
+ {id:'comfort',q:'今日はここで少し息抜きできるといいな。',a:[['落ち着いて話せるよう気を配る',8,'こういう時間が欲しかったんだ。'],['好きな音楽について尋ねる',6,'音楽の話もいいね。'],['軽い冗談で和ませる',4,'ははは、それは面白いね！ 少し気が緩んだよ。'],['忙しいからと急かす',-16,'せかされると落ち着かないよ。']]}
 ];
 function freeTalk(){let history=s.history[s.g.id]||[],available=TOPICS.filter(t=>!s.usedTopics.includes(t.id));if(!available.length)return leave('「'+voice(s.g,'bye')+'」');let fresh=available.filter(t=>!history.includes(t.id)),t=pick(fresh.length?fresh:available);s.usedTopics.push(t.id);s.history[s.g.id]=[...history,t.id].slice(-3);
- show(s.g,'会話','「'+t.q+'」','TALK',t.a.map(([label,delta,reply],i)=>[label,()=>{s.topic=t.id==='goal'&&i===0?'goal':t.id==='holiday'&&i<3?'holiday':null;act(delta,'「'+reply+'」',0,0)}]),'来店：'+s.situation+' ｜ 残り '+(s.stay-s.turn)+'ターン');}
+ show(s.g,'会話','「'+t.q+'」','TALK',t.a.map(([label,delta,reply],i)=>[label,()=>{s.topic=t.id==='goal'&&i===0?'goal':t.id==='holiday'&&i<3?'holiday':null;act(delta,'「'+reply+'」',0,0,t.id==='comfort'&&i===2?'laughter':null)}]),'来店：'+s.situation+' ｜ 残り '+(s.stay-s.turn)+'ターン');}
 function followTalk(){let t=s.topic;s.topic=null;show(s.g,'会話の続き',t==='goal'?'「その目標に向けて、今は何をしているの？」':'「休みが一日増えたら、何をしたい？」','FOLLOW UP',[
  [t==='goal'?'今取り組んでいることを話す':'行ってみたい場所を話す',()=>act(8,t==='goal'?'「少しずつ進んでるんだね。」':'「その場所、楽しそうだね。」',0,0)],
  ['相手の考えも尋ねる',()=>act(6,say(2),0,0)],['まだ考え中と正直に答える',()=>act(3,'「焦らず考えてみるといいね。」',0,0)],['聞こえないふりをする',()=>act(-12,say(5),0,0)]],'さっきの答えから続く会話。');}
@@ -209,20 +239,22 @@ function talk(){
  if(s.personalStep===0||s.personalStep===1){if(personalTalk()!==false)return;}
  if(s.turn>=3&&!s.castThisSeat&&(s.energy<35||((s.day+s.seat)%3===0))){s.castThisSeat=true;return castEvent()}
  if(s.topic)return followTalk();
+ if(s.turn>=4&&s.mood>=65&&!s.humorUsed){s.humorUsed=true;return show(s.g,'和んだ席','「少し気が楽になったよ。何か楽しい話はある？」','LIGHT TALK',[[
+ '軽い冗談で一緒に笑う',()=>act(6,'「ははは！ それは面白い。今日は来てよかったよ。」',0,0,'laughter')],['相手の好きな話題を聞く',()=>act(7,say(2),0,0)],['落ち着いて会話を続ける',()=>act(4,say(1),0,0)],['からかって笑いを取ろうとする',()=>act(-16,say(5),0,0)]],'相手を傷つけずに、楽しい空気を作ろう。');}
  if(s.mood>=72&&!s.chanceUsed&&s.turn>=3)return offerOrder(true);
  if(s.orderCount<2&&s.turn>=3&&!s.orderOffered){s.orderOffered=true;return offerOrder()}
  if(s.mood<40&&!s.troubleUsed){s.troubleUsed=true;return show(s.g,'不満','「さっきから、あまり話が合わない気がする。」','TROUBLE',[
  ['何が嫌だったか聞いて謝る',()=>act(7,say(1),0,0)],['黒服に席の交代を相談する',()=>leave('黒服に相談し、席を交代した。')],['話題を変えて様子を見る',()=>act(1,say(2),0,0)],['不満を責める',()=>{s.mood=0;act(-20,'「'+voice(s.g,'change')+'」',0,0)}]],'無理な注文や話の遮り方には注意。');}
  freeTalk();
 }
-function act(delta,reply,earned=0,extra=0){
+function act(delta,reply,earned=0,extra=0,emotion=null){
  s.turn++;s.energy=clamp(s.energy-(4+rnd(2)+(s.hero.age>=37?1:0)-(s.hero.energy===2?1:0)),0,100);
  const social=delta>0?Math.round((s.talkSkill+(s.hero.age>=37?3:0))*.16):0;
  const result=delta>0?Math.max(1,Math.round(delta*(s.mood>=85?.35:s.mood>=70?.65:1))+social):delta;
  s.momentum=clamp(s.momentum+(result>0?1:-2),0,5);s.mood=clamp(s.mood+result,0,100);s.mem[s.g.id]=clamp((s.mem[s.g.id]||0)+Math.round(result/3),-50,50);
  const amt=clamp(earned,0,s.budget);s.budget-=amt;s.money+=amt;s.nightSales+=amt;s.table+=amt;s.stay=clamp(s.stay+extra,0,8);
  if(delta<0){s.topic=null;if(s.personalBranch!=='listen')s.personalStep=2;}
- show(s.g,'反応',reply,s.mood<18?'CHANGE':'REACTION',[[s.mood<18?'席を交代する ▶':'接客を続ける ▶',talk]],'機嫌 '+Math.round(s.mood)+' ｜ 今回の追加 '+money(amt)+' ｜ この席 '+money(s.table),s.mood<18?'怒り':result<0?'不満':s.mood>=75?'笑顔':'通常');
+ show(s.g,'反応',reply,s.mood<18?'CHANGE':'REACTION',[[s.mood<18?'席を交代する ▶':'接客を続ける ▶',talk]],'機嫌 '+Math.round(s.mood)+' ｜ 今回の追加 '+money(amt)+' ｜ この席 '+money(s.table),s.mood<18?'怒り':result<0?'不満':s.mood>=75?'笑顔':'通常',emotion||(result<0?'anger':result>0?'joy':'neutral'));
 }
 function castEvent(){
  if(!s.castDeck.length)s.castDeck=shuffle(WOMEN.filter(x=>x.id!==s.hero.id&&x.id!=='F01'));
@@ -256,7 +288,7 @@ function castResolve(c,mode){
  else {earned=amount;if(!sober)s.drunk++;s.orderCount++;reply='「二人で選んでくれた'+(sober?'ノンアルコール':'ドリンク')+'、いいね。'+money(amount)+'のセットでお願い。」'}
  s.budget-=earned;s.money+=earned;s.nightSales+=earned;s.table+=earned;
  s.mood=clamp(s.mood+delta,0,100);s.mem[s.g.id]=clamp((s.mem[s.g.id]||0)+Math.round(delta/3),-50,50);
- show(s.g,'連携の結果',reply,'CAST RESULT',[['接客を続ける ▶',talk]],'協力売上 '+money(earned)+' ｜ この席 '+money(s.table)+' ｜ '+(rest?'体力＋5':'追加の体力消費なし'),delta<0?'不満':'通常');
+ show(s.g,'連携の結果',reply,'CAST RESULT',[['接客を続ける ▶',talk]],'協力売上 '+money(earned)+' ｜ この席 '+money(s.table)+' ｜ '+(rest?'体力＋5':'追加の体力消費なし'),delta<0?'不満':'通常',delta<0?'anger':earned>0?'joy':null);
 }
 function leave(text){s.topic=null;show(s.g,'退席',text+'\nセット料金・注文・延長の合計 '+money(s.table),'TABLE RESULT',[['次のお客様へ ▶',()=>{s.seat++;s.orderOffered=false;newCustomer()}]],'今夜は残り '+(2-s.seat)+'組。スタミナは席を移っても引き継ぎ。');}
 $('showcatalog').onclick=()=>{let el=$('catalog');el.classList.toggle('on');$('showcatalog').textContent=el.classList.contains('on')?'人物一覧を閉じる':'40人の人物一覧';if(el.innerHTML)return;for(const [title,people] of [['男性客20人',MEN],['女性キャスト20人',WOMEN]]){let h=document.createElement('h3');h.textContent=title;el.append(h);let grid=document.createElement('div');grid.className='catalog-grid';for(const p of people){let tile=document.createElement('div');tile.className='tile';let img=document.createElement('img');img.src=PHOTOS[p.id];img.alt=p.name;let name=document.createElement('span');name.textContent=p.name;tile.append(img,name);if(CAST_VOICES[p.id]){let detail=document.createElement('small');detail.textContent=CAST_VOICES[p.id].style;detail.style.cssText='display:block;padding:0 6px 8px;font-size:10px;line-height:1.5;color:#e5bed1';tile.append(detail)};grid.append(tile)}el.append(grid)}};
