@@ -162,11 +162,12 @@ function newNight(){syncStamina();if(s.energy<=0)return staminaPause(newNight);s
 const GUEST_TRAITS={"M01":{"temper":1.2,"warmth":1,"limit":100000,"minimum":40,"bottle":72,"wallet":"豪快に使う","moneyLine":"気に入った席なら、細けえ金の話はしたくねえな。"},"M02":{"temper":1.6,"warmth":1,"limit":35000,"minimum":58,"bottle":88,"wallet":"情には動くが押し売り嫌い","moneyLine":"筋が通ってりゃ払うよ。押しつけられるのは嫌いだけどな。"},"M03":{"temper":1.15,"warmth":0,"limit":35000,"minimum":60,"bottle":86,"wallet":"納得できる物に使う","moneyLine":"値段より、何に払うかをちゃんと考えたいんです。"},"M04":{"temper":0.65,"warmth":2,"limit":5000,"minimum":65,"bottle":98,"wallet":"家計を優先する","moneyLine":"楽しくお話ししたいです。ただ、家の出費もあるので注文は控えめに。"},"M05":{"temper":1.1,"warmth":1,"limit":50000,"minimum":48,"bottle":78,"wallet":"趣味と好みに投資する","moneyLine":"好きなものには払うよ。興味がなければ、安くても要らないね。"},"M06":{"temper":0.75,"warmth":3,"limit":100000,"minimum":40,"bottle":70,"wallet":"祝い事には大盤振る舞い","moneyLine":"いいことがあった日は、みんなで楽しむために使いたいんだよ！"},"M07":{"temper":1.05,"warmth":0,"limit":12000,"minimum":62,"bottle":95,"wallet":"昔なじみにだけ財布を開く","moneyLine":"慣れない注文は控えたいね。付き合いを大事にしたいんだ。"},"M08":{"temper":0.65,"warmth":1,"limit":6000,"minimum":60,"bottle":95,"wallet":"趣味の予算は別に残す","moneyLine":"好きなゲームにも使いたいから、ここでは少しずつかな。"},"M09":{"temper":1.4,"warmth":0,"limit":35000,"minimum":54,"bottle":80,"wallet":"見栄を張るが限度はある","moneyLine":"安く見られたくはないよ。でも、何でも払えるわけじゃないからね。"},"M10":{"temper":0.8,"warmth":1,"limit":6000,"minimum":50,"bottle":95,"wallet":"一杯をゆっくり楽しむ","moneyLine":"何杯も頼むより、一杯飲みながら話せりゃ十分だよ。"},"M11":{"temper":1.4,"warmth":0,"limit":70000,"minimum":48,"bottle":76,"wallet":"義理と顔を立てる時に使う","moneyLine":"世話になった相手には出す。雑に扱われてまで金は出さねえぞ。"},"M12":{"temper":0.9,"warmth":3,"limit":70000,"minimum":44,"bottle":74,"wallet":"場を盛り上げるために使う","moneyLine":"みんなで楽しくなる注文ならいいね！ 一人で飲むより好きだな。"},"M13":{"temper":0.8,"warmth":0,"limit":12000,"minimum":65,"bottle":94,"wallet":"計画してから使う","moneyLine":"予算は決めています。その中で、納得して楽しみたいです。"},"M14":{"temper":0.65,"warmth":1,"limit":35000,"minimum":56,"bottle":88,"wallet":"落ち着ける時間に払う","moneyLine":"にぎやかな注文より、ゆっくり話せる時間を大切にしたいね。"},"M15":{"temper":1.25,"warmth":1,"limit":70000,"minimum":48,"bottle":76,"wallet":"気に入れば一気に使う","moneyLine":"気が合えば惜しまねえよ。ただ、調子よく勧めるだけじゃだめだ。"},"M16":{"temper":0.6,"warmth":1,"limit":3000,"minimum":62,"bottle":100,"wallet":"少ない予算を守る","moneyLine":"今は余裕がなくて。飲み物は安いものでもいいかな。"},"M17":{"temper":1.1,"warmth":0,"limit":12000,"minimum":66,"bottle":96,"wallet":"使い道を慎重に決める","moneyLine":"お付き合いは大切ですが、注文は自分で考えて決めます。"},"M18":{"temper":0.7,"warmth":2,"limit":6000,"minimum":48,"bottle":94,"wallet":"仲間との一杯を大事にする","moneyLine":"気楽に飲めればそれでいいよ。無理して張り合うのは性に合わないな。"},"M19":{"temper":1.45,"warmth":0,"limit":50000,"minimum":52,"bottle":78,"wallet":"勝負どころで見栄を張る","moneyLine":"勝負のときは使うよ。でも、こっちのペースも大事にしてほしいな。"},"M20":{"temper":0.5,"warmth":3,"limit":6000,"minimum":68,"bottle":100,"wallet":"優しいけれど財布は固い","moneyLine":"話すのは楽しいですよ。でも家族のためにも、追加の注文は慎重にね。"}};
 function guestTraits(g=s.g){return GUEST_TRAITS[g.id]}
 function discoverGuest(kind){const p=guestTraits(),text=kind==='temper'?(p.temper>=1.25?'怒りやすい':p.temper<=.75?'穏やかな応対':'扱われ方をよく見ている'):p.wallet;const notes=s.insights[s.g.id]||(s.insights[s.g.id]=[]);if(!notes.includes(text))notes.push(text)}
-function purchaseDecision(amount,kind){
+function purchaseDecision(amount,kind,fit=0){
  const p=guestTraits();
  if(amount>s.budget)return {ok:false,reply:'「今日は残りの予算を超えてしまうから、やめておくよ。」'};
  if(amount>p.limit)return {ok:false,reply:p.limit<=6000?'「話すのは楽しいけれど、その注文は控えたいな。今日は少しずつでお願いします。」':'「予算が残っていても、その注文には慎重でいたいんだ。」'};
- const required=kind==='bottle'?p.bottle:kind==='extend'?Math.min(95,p.minimum+8):kind==='soft'?Math.max(35,p.minimum-10):p.minimum;
+ const bottleTrust=amount>=100000?Math.max(94,p.bottle+12):amount>=70000?Math.max(86,p.bottle+8):amount>=25000?p.bottle:Math.min(p.bottle,p.minimum+8);
+ const required=Math.max(30,(kind==='bottle'?bottleTrust:kind==='extend'?Math.min(95,p.minimum+8):kind==='soft'?Math.max(35,p.minimum-10):p.minimum)-fit);
  if(s.mood<required)return {ok:false,reply:kind==='bottle'?'「高い注文は、もっと信頼できてからにしたいな。」':'「まずはゆっくり話したいな。注文はもう少し後で。」'};
  return {ok:true};
 }
@@ -244,23 +245,52 @@ function freeTalk(){let history=s.history[s.g.id]||[],available=TOPICS.filter(t=
 function followTalk(){let t=s.topic;s.topic=null;show(s.g,'会話の続き',t==='goal'?'「その目標に向けて、今は何をしているの？」':'「休みが一日増えたら、何をしたい？」','FOLLOW UP',[
  [t==='goal'?'今取り組んでいることを話す':'行ってみたい場所を話す',()=>act(8,t==='goal'?'「少しずつ進んでるんだね。」':'「その場所、楽しそうだね。」',0,0)],
  ['相手の考えも尋ねる',()=>act(6,say(2),0,0)],['まだ考え中と正直に答える',()=>act(3,'「焦らず考えてみるといいね。」',0,0)],['聞こえないふりをする',()=>act(-12,say(5),0,0)]],'さっきの答えから続く会話。');}
+const DRINKS=[{"id":"beer","name":"ビール","price":1500,"group":"glass","taste":"beer","alcohol":true},{"id":"cocktail","name":"カクテル","price":3000,"group":"glass","taste":"cocktail","alcohol":true},{"id":"cast-glass","name":"キャストと乾杯セット","price":5000,"group":"glass","taste":"cocktail","alcohol":true},{"id":"shochu-house","name":"ハウス焼酎","price":8000,"group":"shochu","taste":"shochu","alcohol":true},{"id":"shochu-select","name":"厳選焼酎","price":15000,"group":"shochu","taste":"shochu","alcohol":true},{"id":"shochu-reserve","name":"プレミアム焼酎","price":25000,"group":"shochu","taste":"shochu","alcohol":true},{"id":"whisky-house","name":"ハウスウイスキー","price":12000,"group":"whisky","taste":"whisky","alcohol":true},{"id":"whisky-select","name":"熟成ウイスキー","price":35000,"group":"whisky","taste":"whisky","alcohol":true},{"id":"whisky-reserve","name":"希少ウイスキー","price":70000,"group":"whisky","taste":"whisky","alcohol":true},{"id":"champagne-house","name":"ハウスシャンパン","price":20000,"group":"champagne","taste":"champagne","alcohol":true},{"id":"champagne-rose","name":"ロゼシャンパン","price":50000,"group":"champagne","taste":"champagne","alcohol":true},{"id":"champagne-vintage","name":"ヴィンテージシャンパン","price":100000,"group":"champagne","taste":"champagne","alcohol":true},{"id":"tea","name":"お茶・炭酸水","price":1000,"group":"soft","taste":"soft","alcohol":false},{"id":"soft-cocktail","name":"ノンアルカクテル","price":1500,"group":"soft","taste":"soft","alcohol":false},{"id":"soft-special","name":"フルーツノンアルセット","price":3000,"group":"soft","taste":"soft","alcohol":false}];
+const DRINK_PREFERENCES={"M01":"whisky","M02":"shochu","M03":"whisky","M04":"beer","M05":"whisky","M06":"champagne","M07":"shochu","M08":"cocktail","M09":"champagne","M10":"beer","M11":"shochu","M12":"champagne","M13":"whisky","M14":"whisky","M15":"whisky","M16":"soft","M17":"shochu","M18":"beer","M19":"champagne","M20":"beer"};
+const DRINK_GROUP_NAMES={glass:'一杯のドリンク',beer:'ビール',cocktail:'カクテル',shochu:'焼酎',whisky:'ウイスキー',champagne:'シャンパン',soft:'ノンアルコール'};
+function alcoholAllowed(){return !s.noAlcohol&&s.drunk<2}
 function order(kind){
- if(kind==='extend'&&s.extended)return act(0,'「延長はもうお願いしてあるよ。」',0,0,'neutral');
- if(kind!=='extend'&&(s.noAlcohol||s.drunk>=2))kind='soft';
- const amount=kind==='extend'?12000:kind==='bottle'?35000:kind==='soft'?1500:5000;
- const decision=purchaseDecision(amount,kind);discoverGuest('wallet');
+ if(kind==='extend'){
+  if(s.extended)return act(0,'「延長はもうお願いしてあるよ。」',0,0,'neutral');
+  const decision=purchaseDecision(12000,'extend');discoverGuest('wallet');if(!decision.ok)return act(0,decision.reply,0,0,'neutral');
+  s.extended=true;return act(2,'「もう少し話そう。延長をお願いします。」',12000,2);
+ }
+ const id=({drink:'cast-glass',bottle:'whisky-select',soft:'soft-cocktail'})[kind]||kind,drink=DRINKS.find(d=>d.id===id);
+ if(!drink)return;
+ if(drink.alcohol&&!alcoholAllowed())return show(s.g,'飲み物の相談','「お酒はこの辺にしておきたいな。」','DRINK MENU',[[ 'ノンアルコールから選ぶ',()=>drinkMenu('soft')],['注文メニューに戻る',()=>offerOrder()]],'お酒の注文は増やさず、飲まない選択もできる。');
+ const fit=DRINK_PREFERENCES[s.g.id]===drink.taste?6:0;
+ const bottle=['shochu','whisky','champagne'].includes(drink.group);
+ const decision=purchaseDecision(drink.price,drink.alcohol?(bottle?'bottle':'glass'):'soft',fit);discoverGuest('wallet');
  if(!decision.ok)return act(0,decision.reply,0,0,'neutral');
- if(kind==='extend'){s.extended=true;return act(2,'「もう少し話そう。延長をお願いします。」',amount,2)}
- s.orderCount++;if(kind!=='soft')s.drunk++;
- act(kind==='bottle'?3:2,kind==='bottle'?'「好みも気持ちも分かってくれたんだね。それなら一本お願いしよう。」':kind==='soft'?'「ノンアルコールなら、一杯お願いします。」':'「それを一杯、お願いします。」',amount,0);
+ s.orderCount++;if(drink.alcohol)s.drunk++;
+ const favorite=fit>0?'好みに合うものを選んでくれたんだね。':'それなら飲みたいな。';
+ act((bottle?3:2)+(fit?2:0),'「'+favorite+' '+drink.name+'を'+money(drink.price)+'でお願いします。」',drink.price,0);
 }
-function offerOrder(chance=false){s.chanceUsed=chance||s.chanceUsed;let sober=!s.noAlcohol&&s.drunk<2;
- let options=[
- [sober?'ドリンクを提案する ¥5,000':'ノンアルコールを提案する ¥1,500',()=>sober?order('drink'):order('soft')],
- [sober?'好みを聞いてボトルを提案する ¥35,000':'飲み物を増やさず会話を続ける',()=>sober?order('bottle'):act(4,say(2),0,0)],
- [!s.extended?'延長を提案する ¥12,000':'今回は見送る',()=>!s.extended?order('extend'):leave('「'+voice(s.g,'bye')+'」')],
- ['予算を無視して注文を迫る',()=>act(-24,say(5),0,0)]];
- show(s.g,'注文',chance?'「もう少し一緒に話していたいな。」':sober?'「おすすめの飲み物はある？」':'「お酒はこの辺にして、少しゆっくりしたいな。」',chance?'CHANCE TIME':'ORDER',options,'残り予算 '+money(s.budget)+' ｜ ボトルは信頼と予算が必要。');}
+function drinkMenu(group){
+ if(group!=='soft'&&!alcoholAllowed())group='soft';
+ const drinks=DRINKS.filter(d=>d.group===group);
+ show(s.g,'ドリンクメニュー',DRINK_GROUP_NAMES[group]+'から、どれを提案する？','DRINK MENU',[
+ ...drinks.map(d=>[d.name+' '+money(d.price),()=>order(d.id)]),['ひとつ前のメニューに戻る',()=>['shochu','whisky','champagne'].includes(group)?bottleMenu():offerOrder()]
+ ],'残り予算 '+money(s.budget)+' ｜ 好み：'+(s.knownDrinks?.[s.g.id]?DRINK_GROUP_NAMES[DRINK_PREFERENCES[s.g.id]]:'まだ聞いていない')+' ｜ 見る・戻る操作では体力を消費しない。');
+}
+function bottleMenu(){if(!alcoholAllowed())return drinkMenu('soft');show(s.g,'ボトルメニュー','どんな種類のボトルを提案する？','BOTTLE MENU',[
+ ['焼酎 ¥8,000〜¥25,000',()=>drinkMenu('shochu')],['ウイスキー ¥12,000〜¥70,000',()=>drinkMenu('whisky')],['シャンパン ¥20,000〜¥100,000',()=>drinkMenu('champagne')],['注文メニューに戻る',()=>offerOrder()]
+ ],'残り予算 '+money(s.budget)+' ｜ 値段・好み・信頼の積み重ねで注文の受けやすさが変わる。');}
+function askDrinkPreference(){
+ const taste=DRINK_PREFERENCES[s.g.id],label=DRINK_GROUP_NAMES[taste];s.knownDrinks??={};s.knownDrinks[s.g.id]=true;
+ const polite=GUEST_TONE[s.g.id]==='polite';
+ show(s.g,'飲み物の好み','「'+(taste==='soft'?'飲むならノンアルコールがいい'+(polite?'ですね。':'な。'):label+'が好み'+(polite?'です。':'だな。'))+'」','DRINK · 好み',[
+ ['好みに合うメニューを見る',()=>drinkMenu(taste==='beer'||taste==='cocktail'?'glass':taste)],['注文メニューに戻る',()=>offerOrder()]
+ ],'好みを覚えた：'+label+' ｜ 好きな種類でも、高すぎる注文は断られる。');
+}
+function orderServices(){show(s.g,'注文の相談','飲み物以外の希望も確認しよう。','ORDER · 相談',[
+ [s.extended?'延長は注文済み':'延長を提案する ¥12,000',()=>s.extended?offerOrder():order('extend')],['好きな飲み物を聞く',askDrinkPreference],['注文せず会話を続ける',()=>act(3,'「今ある飲み物で、もう少し話そう。」',0,0)],['注文メニューに戻る',()=>offerOrder()]
+ ],'無理な注文をせず、相手に合わせて選ぼう。');}
+function offerOrder(chance=false){s.chanceUsed=chance||s.chanceUsed;
+ const sober=alcoholAllowed();
+ show(s.g,'注文',chance?'「もう少し一緒に話していたいな。」':sober?'「飲み物、どんなものがある？」':'「お酒はこの辺にしておきたいな。」',chance?'CHANCE TIME':'ORDER',sober?[
+ ['一杯のドリンク ¥1,500〜¥5,000',()=>drinkMenu('glass')],['ボトル・シャンパン ¥8,000〜¥100,000',bottleMenu],['ノンアルコール ¥1,000〜¥3,000',()=>drinkMenu('soft')],['好み・延長・注文見送り',orderServices]
+ ]:[['ノンアルコール ¥1,000〜¥3,000',()=>drinkMenu('soft')],['好きな飲み物を聞く',askDrinkPreference],['飲み物を増やさず会話を続ける',()=>act(4,say(2),0,0)],['延長・注文見送り',orderServices]],'残り予算 '+money(s.budget)+' ｜ 15種類。高額注文は金銭感覚・信頼・好み次第。');}
 function talk(){
  if(s.mood<18)return leave('「'+voice(s.g,'change')+'」');
  if(s.turn>=s.stay)return leave('「'+voice(s.g,'bye')+'」');
