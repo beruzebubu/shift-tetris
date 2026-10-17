@@ -193,7 +193,7 @@ const FOLLOW={
 function personalTalk(){let id=s.g.id,story=PERSON_SCENES[id],f=FOLLOW[id];
  if(s.personalStep===0){s.personalStep=1;const prior=s.stories[id];let line=prior?'この前の話の続きなんだけど。'+f[0]:story[0];s.stories[id]=true;
  return show(s.g,'お客様の話','「'+line+'」','PERSONAL TALK',[
- [prior?'その後の様子を丁寧に聞く':story[1],()=>{s.personalBranch='listen';act(10,prior?say(4):story[2],0,0)}],
+ [prior?'その後の様子を丁寧に聞く':story[1],()=>{s.personalBranch='listen';act(10,prior?say(4):story[2],0,0,prior?'joy':'neutral')}],
  ['今の気持ちを丁寧に聞く',()=>{s.personalBranch='listen';act(8,say(4),0,0)}],
  ['今は気分転換したいか確認する',()=>{s.personalBranch='change';s.personalStep=2;act(4,say(6),0,0)}],
  ['話を遮って注文を迫る',()=>{s.personalBranch='blocked';s.personalStep=2;act(-18,say(5),0,0)}]],'お客様の話に、どう応える？');}
